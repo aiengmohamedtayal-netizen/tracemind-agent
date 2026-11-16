@@ -164,7 +164,7 @@ export const HistoryReportsView: React.FC<HistoryReportsViewProps> = ({
               </button>
               <button
                 type="button"
-                onClick={() => onNavigate('upload')}
+                onClick={() => onNavigate('analyze')}
                 className="tm-btn-primary px-4 py-2 text-xs"
               >
                 <Upload className="w-3.5 h-3.5" aria-hidden="true" />

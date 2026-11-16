@@ -100,7 +100,7 @@ export const PsoAgentView: React.FC<PsoAgentViewProps> = ({
             </button>
             <button
               type="button"
-              onClick={() => onNavigate('upload')}
+              onClick={() => onNavigate('analyze')}
               className="tm-btn-primary px-4 py-2 text-xs"
             >
               <Upload className="w-3.5 h-3.5" aria-hidden="true" />
@@ -113,6 +113,7 @@ export const PsoAgentView: React.FC<PsoAgentViewProps> = ({
   }
 
   const { pso_optimization: pso, agent_recommendation: agent } = run;
+  const evidenceCoverage = agent.evidence_coverage_pct ?? agent.confidence_score_pct;
   const verifiedCount = Object.values(completedSteps).filter(Boolean).length;
   const totalSteps = agent.execution_steps.length;
   const progressPct = totalSteps > 0 ? Math.round((verifiedCount / totalSteps) * 100) : 0;
@@ -304,7 +305,7 @@ export const PsoAgentView: React.FC<PsoAgentViewProps> = ({
               </span>
               <span aria-hidden="true">·</span>
               <span className="font-mono font-semibold text-slate-700">
-                Confidence {agent.confidence_score_pct}%
+                Evidence coverage {evidenceCoverage}%
               </span>
             </div>
             <h2 className="text-base font-bold text-slate-900 mt-1">
@@ -371,6 +372,33 @@ export const PsoAgentView: React.FC<PsoAgentViewProps> = ({
               </div>
             )}
           </div>
+
+          {agent.decision_trace && (
+            <details className="pt-4 border-t border-slate-200">
+              <summary className="cursor-pointer text-xs font-bold text-slate-900">
+                Decision trace: {agent.decision_trace.beliefs.length} beliefs · {agent.decision_trace.goals.length} goals · {agent.decision_trace.candidate_plans.length} candidate plans
+              </summary>
+              <div className="mt-3 space-y-3 text-xs text-slate-700">
+                <p>{agent.decision_trace.selected_intention.selection_reason}</p>
+                {agent.decision_trace.missing_evidence.length > 0 && (
+                  <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+                    <div className="font-semibold text-amber-900">Missing evidence</div>
+                    <ul className="mt-1 list-disc pl-4 text-amber-800">
+                      {agent.decision_trace.missing_evidence.map((item) => <li key={item}>{item}</li>)}
+                    </ul>
+                  </div>
+                )}
+                <div className="rounded-lg bg-slate-50 p-3">
+                  <div className="font-semibold text-slate-900">Beliefs</div>
+                  <ul className="mt-1 space-y-1">
+                    {agent.decision_trace.beliefs.map((belief) => (
+                      <li key={belief.belief_id}><span className="font-mono">[{belief.status}]</span> {belief.statement}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </details>
+          )}
         </section>
 
         {/* Right 6 Cols: Step-by-Step Execution Runbook */}

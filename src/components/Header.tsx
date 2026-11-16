@@ -3,10 +3,9 @@ import { motion } from 'motion/react';
 import { Plus } from 'lucide-react';
 
 export type NavTabId =
-  | 'dashboard'
-  | 'upload'
-  | 'anomalies'
-  | 'pso_agent'
+  | 'overview'
+  | 'analyze'
+  | 'investigate'
   | 'history';
 
 interface HeaderProps {
@@ -16,11 +15,10 @@ interface HeaderProps {
 }
 
 const NAV_ITEMS: { id: NavTabId; label: string }[] = [
-  { id: 'dashboard', label: 'Overview' },
-  { id: 'upload', label: 'Upload & Analyze' },
-  { id: 'anomalies', label: 'Anomalous Events' },
-  { id: 'pso_agent', label: 'PSO & Agent' },
-  { id: 'history', label: 'History & Reports' },
+  { id: 'overview', label: 'Overview' },
+  { id: 'analyze', label: 'Analyze' },
+  { id: 'investigate', label: 'Investigate' },
+  { id: 'history', label: 'History' },
 ];
 
 export const Header: React.FC<HeaderProps> = ({
@@ -31,10 +29,10 @@ export const Header: React.FC<HeaderProps> = ({
     <header className="sticky top-0 z-30 flex flex-wrap md:flex-nowrap items-center justify-between gap-y-2.5 gap-x-4 md:gap-8 px-4 sm:px-6 py-3 bg-white/95 border-b border-slate-200/90 shadow-2xs">
       {/* Zone 1: Single text element wordmark */}
       <a
-        href="#dashboard"
+        href="#overview"
         onClick={(e) => {
           e.preventDefault();
-          onSelectTab('dashboard');
+          onSelectTab('overview');
         }}
         className="text-lg font-bold tracking-tight text-slate-900 hover:text-blue-600 transition-colors whitespace-nowrap shrink-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
       >
@@ -80,7 +78,7 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="order-2 md:order-3 flex items-center shrink-0">
         <button
           type="button"
-          onClick={() => onSelectTab('upload')}
+          onClick={() => onSelectTab('analyze')}
           className="tm-btn-primary px-3.5 sm:px-4 py-2 text-xs whitespace-nowrap shrink-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
         >
           <Plus className="w-3.5 h-3.5 stroke-[2.5]" aria-hidden="true" />

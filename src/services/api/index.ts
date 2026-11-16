@@ -1,6 +1,23 @@
 import { API_CONFIG } from '../../config/api';
 import { ApiConnectionState } from '../../types/tracemind';
 import { apiRequest } from './client';
+import { setAccessToken } from './client';
+
+export async function authenticate(email: string, password: string, mode: 'login' | 'register') {
+  const result = await apiRequest<{access_token:string;user:{id:number;email:string;role:string}}>(`/auth/${mode === 'register' ? 'register' : 'login'}`, {method:'POST',body:{email,password},timeoutMs:20000});
+  setAccessToken(result.access_token);
+  return result.user;
+}
+export async function restoreSession() {
+  try {
+    const result = await apiRequest<{access_token:string}>('/auth/refresh',{method:'POST',timeoutMs:20000});
+    setAccessToken(result.access_token);
+    return await apiRequest<{id:number;email:string;role:string}>('/auth/me');
+  } catch { setAccessToken(null); return null; }
+}
+export async function endSession() {
+  try { await apiRequest<void>('/auth/logout',{method:'POST'}); } finally { setAccessToken(null); }
+}
 import { submitEventLogAnalysis } from './analysis';
 import {
   deleteAnalysisRunById,

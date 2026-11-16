@@ -1,5 +1,5 @@
 import { API_CONFIG } from '../../config/api';
-import { AnalysisConfig, AnalysisRun } from '../../types/tracemind';
+import { AnalysisConfig, AnalysisRun, LogFileFormat } from '../../types/tracemind';
 import {
   DEFAULT_ANALYSIS_CONFIG,
   parseEventLogContent,
@@ -12,13 +12,13 @@ export interface SubmitAnalysisParams {
   datasetName: string;
   rawContent: string;
   file?: File | null;
-  formatHint?: 'CSV' | 'JSON';
+  formatHint?: LogFileFormat;
   config?: AnalysisConfig;
   signal?: AbortSignal;
 }
 
 /**
- * Submits an event log (file or raw CSV/JSON payload) to the backend POST /analyze endpoint.
+ * Submits telemetry or generic text logs to the backend POST /analyze endpoint.
  * Never fabricates or simulates analysis results if the backend is unavailable.
  */
 export async function submitEventLogAnalysis(
@@ -31,7 +31,7 @@ export async function submitEventLogAnalysis(
     }
   }
 
-  // Validate CSV/JSON structure on the client before sending over the wire
+  // Validate structure and preview the detected format before sending.
   const { detectedFormat } = parseEventLogContent(
     params.rawContent,
     params.formatHint
@@ -66,7 +66,9 @@ export async function submitEventLogAnalysis(
     method: 'POST',
     body: requestBody,
     signal: params.signal,
-    timeoutMs: 30000,
+    // Large but valid log files (100k+ rows) need time for scoring, persistence,
+    // and the complete evaluated result payload.
+    timeoutMs: 180000,
   });
 
   return validateAnalysisRunResponse(rawResponse);

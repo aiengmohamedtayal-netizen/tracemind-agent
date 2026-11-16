@@ -64,11 +64,11 @@ export const DOCUMENTED_BACKEND_ENDPOINTS: BackendEndpointSpec[] = [
   {
     method: 'DELETE',
     path: `${API_CONFIG.baseUrl}/history/:run_id`,
-    integrationStatus: 'awaiting_backend_confirmation',
+    integrationStatus: 'integrated',
     description:
       'Deletes a persisted analysis run record from SQLite (requires backend route confirmation).',
-    responseSchema: '{ "deleted": true, "run_id": string }',
-    notes: 'Awaiting backend route confirmation from FastAPI team.',
+    responseSchema: '204 No Content',
+    notes: 'The backend commits deletion before returning the response.',
   },
   {
     method: 'POST',

@@ -27,6 +27,10 @@ export interface RequestOptions {
   headers?: Record<string, string>;
 }
 
+let accessToken: string | null = null;
+let refreshInFlight: Promise<boolean> | null = null;
+export const setAccessToken = (token: string | null) => { accessToken = token; };
+
 /**
  * Reusable HTTP client for TraceMind backend requests.
  * Supports request cancellation, timeouts, JSON validation, and structured error reporting.
@@ -60,6 +64,7 @@ export async function apiRequest<T>(
     Accept: 'application/json',
     ...options.headers,
   };
+  if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
 
   if (options.body !== undefined && !isFormData && !headers['Content-Type']) {
     headers['Content-Type'] = 'application/json';
@@ -69,6 +74,7 @@ export async function apiRequest<T>(
     const response = await fetch(endpoint, {
       method,
       headers,
+      credentials: 'include',
       body:
         options.body === undefined
           ? undefined
@@ -77,6 +83,21 @@ export async function apiRequest<T>(
           : JSON.stringify(options.body),
       signal: controller.signal,
     });
+
+    if (response.status === 401 && accessToken && !path.includes('/auth/')) {
+      refreshInFlight ??= (async () => {
+        try {
+          const refreshed = await apiRequest<{ access_token: string }>('/auth/refresh', { method: 'POST' });
+          setAccessToken(refreshed.access_token);
+          return true;
+        } catch {
+          setAccessToken(null);
+          if (typeof window !== 'undefined') window.dispatchEvent(new Event('tracemind:session-expired'));
+          return false;
+        } finally { refreshInFlight = null; }
+      })();
+      if (await refreshInFlight) return apiRequest<T>(path, options);
+    }
 
     const contentType = response.headers.get('content-type') || '';
     const isJson = contentType.includes('application/json');
@@ -106,6 +127,8 @@ export async function apiRequest<T>(
         isNetworkError: false,
       });
     }
+
+    if (response.status === 204) return undefined as T;
 
     if (!isJson) {
       throw new ApiClientError({

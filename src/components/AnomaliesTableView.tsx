@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'motion/react';
 import {
   ArrowDownUp,
@@ -20,6 +20,8 @@ import {
   filterAndSortEvents,
 } from '../utils/analysisEngine';
 import { NavTabId } from './Header';
+
+const EVENT_PAGE_SIZE = 100;
 
 interface AnomaliesTableViewProps {
   run: AnalysisRun | null;
@@ -48,6 +50,7 @@ export const AnomaliesTableView: React.FC<AnomaliesTableViewProps> = ({
     'anomaly_score' | 'latency_ms' | 'error_rate' | 'cpu_pct' | 'timestamp'
   >('anomaly_score');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [pageIndex, setPageIndex] = useState(0);
 
   const events = useMemo(() => run?.events ?? [], [run]);
 
@@ -70,6 +73,10 @@ export const AnomaliesTableView: React.FC<AnomaliesTableViewProps> = ({
   );
 
   const activeEvent = selectedEvent || filteredEvents[0] || null;
+  const pageCount = Math.max(1, Math.ceil(filteredEvents.length / EVENT_PAGE_SIZE));
+  const pageEvents = filteredEvents.slice(pageIndex * EVENT_PAGE_SIZE, (pageIndex + 1) * EVENT_PAGE_SIZE);
+
+  useEffect(() => setPageIndex(0), [run?.run_id, searchQuery, onlyAnomalies, severityFilter, serviceFilter, sortBy, sortDirection]);
 
   const handleDownloadCsv = () => {
     if (!run || filteredEvents.length === 0) return;
@@ -334,7 +341,7 @@ export const AnomaliesTableView: React.FC<AnomaliesTableViewProps> = ({
             </button>
             <button
               type="button"
-              onClick={() => onNavigate('upload')}
+              onClick={() => onNavigate('analyze')}
               className="tm-btn-primary px-4 py-2 text-xs"
             >
               <Upload className="w-3.5 h-3.5" aria-hidden="true" />
@@ -373,6 +380,14 @@ export const AnomaliesTableView: React.FC<AnomaliesTableViewProps> = ({
                 )}
               </div>
             ) : (
+              <>
+              <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-3 text-xs text-slate-600">
+                <span>Page {pageIndex + 1} of {pageCount} · {EVENT_PAGE_SIZE} records per page</span>
+                <div className="flex gap-2">
+                  <button type="button" className="tm-btn-secondary px-2.5 py-1.5 disabled:opacity-40" disabled={pageIndex === 0} onClick={() => setPageIndex((page) => Math.max(0, page - 1))}>Previous</button>
+                  <button type="button" className="tm-btn-secondary px-2.5 py-1.5 disabled:opacity-40" disabled={pageIndex + 1 >= pageCount} onClick={() => setPageIndex((page) => Math.min(pageCount - 1, page + 1))}>Next</button>
+                </div>
+              </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
@@ -388,7 +403,7 @@ export const AnomaliesTableView: React.FC<AnomaliesTableViewProps> = ({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200/80 text-xs">
-                    {filteredEvents.map((ev) => {
+                    {pageEvents.map((ev) => {
                       const isSelected = activeEvent?.event_id === ev.event_id;
                       return (
                         <tr
@@ -408,28 +423,28 @@ export const AnomaliesTableView: React.FC<AnomaliesTableViewProps> = ({
                           <td className="py-2.5 px-3.5">
                             <div className="font-semibold text-slate-900">{ev.service}</div>
                             <div className="text-[11px] font-mono text-slate-500">
-                              {ev.event_type} · HTTP {ev.status_code}
+                              {ev.event_type}{ev.status_code == null ? '' : ` · HTTP ${ev.status_code}`}
                             </div>
                           </td>
                           <td className="py-2.5 px-3.5 font-mono text-slate-600 tabular-nums whitespace-nowrap">
                             {ev.source_ip}
                           </td>
                           <td className="py-2.5 px-3.5 text-right font-mono tabular-nums text-slate-900 whitespace-nowrap">
-                            {ev.latency_ms} ms
+                            {ev.latency_ms == null ? '—' : `${ev.latency_ms} ms`}
                           </td>
                           <td className="py-2.5 px-3.5 text-right font-mono tabular-nums whitespace-nowrap">
                             <span
                               className={
-                                ev.error_rate >= 0.1
+                                (ev.error_rate ?? 0) >= 0.1
                                   ? 'text-red-700 font-semibold'
                                   : 'text-slate-700'
                               }
                             >
-                              {(ev.error_rate * 100).toFixed(1)}%
+                              {ev.error_rate == null ? '—' : `${(ev.error_rate * 100).toFixed(1)}%`}
                             </span>
                           </td>
                           <td className="py-2.5 px-3.5 text-right font-mono tabular-nums text-slate-800 whitespace-nowrap">
-                            {ev.cpu_pct}%
+                            {ev.cpu_pct == null ? '—' : `${ev.cpu_pct}%`}
                           </td>
                           <td className="py-2.5 px-3.5 text-right font-mono tabular-nums font-bold whitespace-nowrap">
                             <div className="inline-flex items-center justify-end gap-2">
@@ -473,6 +488,7 @@ export const AnomaliesTableView: React.FC<AnomaliesTableViewProps> = ({
                   </tbody>
                 </table>
               </div>
+              </>
             )}
           </div>
 
@@ -488,7 +504,7 @@ export const AnomaliesTableView: React.FC<AnomaliesTableViewProps> = ({
                     <span className="font-mono font-bold text-blue-700">
                       {activeEvent.event_id}
                     </span>
-                    <span className="font-mono text-[11px]">{activeEvent.timestamp}</span>
+                    <span className="font-mono text-[11px]">{activeEvent.timestamp || 'Timestamp unavailable'}</span>
                   </div>
                   <h2 className="text-base font-bold text-slate-900 mt-1">
                     {activeEvent.service} — {activeEvent.event_type}
@@ -505,18 +521,17 @@ export const AnomaliesTableView: React.FC<AnomaliesTableViewProps> = ({
                     >
                       {activeEvent.is_anomaly
                         ? `Flagged Anomaly (${activeEvent.severity.toUpperCase()})`
-                        : 'Nominal Telemetry Record'}
+                        : 'Nominal Log Record'}
                     </span>
                     <span aria-hidden="true">·</span>
-                    <span className="font-mono text-slate-600">
-                      HTTP {activeEvent.status_code}
-                    </span>
-                    <span aria-hidden="true">·</span>
+                    {activeEvent.status_code == null ? null : <><span className="font-mono text-slate-600">HTTP {activeEvent.status_code}</span><span aria-hidden="true">·</span></>}
                     <span className="font-mono text-slate-600">
                       {activeEvent.source_ip}
                     </span>
                   </div>
                 </div>
+
+                {activeEvent.message && <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs"><div className="mb-1 font-semibold text-slate-600">Raw log message</div><pre className="max-h-48 overflow-auto whitespace-pre-wrap break-words font-mono text-slate-800">{activeEvent.message}</pre></div>}
 
                 {/* Isolation Forest Metrics */}
                 <div className="grid grid-cols-2 gap-3 bg-slate-50 border border-slate-200/80 rounded-xl p-3.5 text-xs">

@@ -45,13 +45,21 @@ test('parseEventLogContent validates and parses JSON event logs accurately', () 
   assert.equal(records[1].latency_ms, 1950);
 });
 
-test('parseEventLogContent rejects empty or malformed input', () => {
+test('parseEventLogContent handles generic text logs and rejects malformed structured input', () => {
   assert.throws(() => parseEventLogContent('   '), /cannot be empty/i);
-  assert.throws(
-    () => parseEventLogContent('invalid_col_1,invalid_col_2\n1,2'),
-    /missing required telemetry columns/i
-  );
+  const generic = parseEventLogContent('invalid_col_1,invalid_col_2\n1,2');
+  assert.equal(generic.detectedFormat, 'LOG');
+  assert.equal(generic.records.length, 2);
+  assert.equal(generic.records[0].cpu_pct, null);
   assert.throws(() => parseEventLogContent('{bad json'), /Invalid JSON syntax/i);
+});
+
+test('parseEventLogContent previews plain Spark text without default telemetry values', () => {
+  const logs = parseEventLogContent('17/06/09 20:10:40 INFO spark.Context: Job started\n17/06/09 20:10:41 ERROR spark.Executor: Task failed', 'LOG');
+  assert.equal(logs.detectedFormat, 'LOG');
+  assert.equal(logs.records[0].service, 'spark.Context');
+  assert.equal(logs.records[1].event_type, 'ERROR');
+  assert.equal(logs.records[1].latency_ms, null);
 });
 
 test('validateAnalysisRunResponse rejects incomplete payloads and normalizes partial arrays', () => {

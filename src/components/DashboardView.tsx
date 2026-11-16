@@ -136,7 +136,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </button>
             <button
               type="button"
-              onClick={() => onNavigate('upload')}
+              onClick={() => onNavigate('analyze')}
               className="tm-btn-primary px-3.5 py-2 text-xs whitespace-nowrap shrink-0"
             >
               <UploadCloud className="w-3.5 h-3.5" aria-hidden="true" />
@@ -267,7 +267,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </button>
             <button
               type="button"
-              onClick={() => onNavigate('upload')}
+              onClick={() => onNavigate('analyze')}
               className="tm-btn-primary px-4 py-2 text-xs"
             >
               <UploadCloud className="w-3.5 h-3.5" aria-hidden="true" />
@@ -374,14 +374,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         <div className="flex flex-wrap items-center gap-2.5">
           <button
             type="button"
-            onClick={() => onNavigate('anomalies')}
+            onClick={() => onNavigate('investigate')}
             className="tm-btn-secondary px-3.5 py-2 text-xs whitespace-nowrap shrink-0"
           >
             Inspect All Events ({run.events.length})
           </button>
           <button
             type="button"
-            onClick={() => onNavigate('pso_agent')}
+            onClick={() => onNavigate('investigate')}
             className="px-3.5 py-2 text-xs font-semibold text-slate-900 bg-slate-200/80 border border-slate-300/80 rounded-lg hover:bg-slate-200 transition-colors cursor-pointer whitespace-nowrap shrink-0"
           >
             View PSO &amp; Agent Runbook
@@ -898,7 +898,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <span className="font-mono">{agent.agent_version}</span>
               <span aria-hidden="true">·</span>
               <span className="font-mono text-slate-900 font-semibold">
-                Confidence: {agent.confidence_score_pct}%
+                Evidence coverage: {agent.evidence_coverage_pct ?? agent.confidence_score_pct}%
               </span>
             </div>
             <h2 className="text-lg font-bold text-slate-900 mt-1">
@@ -908,7 +908,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
           <button
             type="button"
-            onClick={() => onNavigate('pso_agent')}
+            onClick={() => onNavigate('investigate')}
             className="tm-btn-primary px-4 py-2 text-xs whitespace-nowrap shrink-0"
           >
             Open Execution Runbook ({agent.execution_steps.length} Steps)
@@ -952,7 +952,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
           <button
             type="button"
-            onClick={() => onNavigate('anomalies')}
+            onClick={() => onNavigate('investigate')}
             className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-800 cursor-pointer whitespace-nowrap shrink-0"
           >
             Explore All {iforest.anomalous_events_count} Anomalies &rarr;
@@ -986,7 +986,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     {ev.event_id}
                   </td>
                   <td className="py-3 px-4 font-mono text-slate-500 tabular-nums whitespace-nowrap">
-                    {ev.timestamp.replace('T', ' ').replace('Z', '')}
+                    {ev.timestamp?.replace('T', ' ').replace('Z', '') || '—'}
                   </td>
                   <td className="py-3 px-4 font-semibold text-slate-800 whitespace-nowrap">
                     {ev.service}
@@ -995,13 +995,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     {ev.primary_driver}
                   </td>
                   <td className="py-3 px-4 text-right font-mono tabular-nums text-slate-900">
-                    {ev.latency_ms}
+                    {ev.latency_ms ?? '—'}
                   </td>
                   <td className="py-3 px-4 text-right font-mono tabular-nums text-red-700 font-semibold">
-                    {(ev.error_rate * 100).toFixed(1)}%
+                    {ev.error_rate == null ? '—' : `${(ev.error_rate * 100).toFixed(1)}%`}
                   </td>
                   <td className="py-3 px-4 text-right font-mono tabular-nums text-slate-900">
-                    {ev.cpu_pct}%
+                    {ev.cpu_pct == null ? '—' : `${ev.cpu_pct}%`}
                   </td>
                   <td className="py-3 px-4 text-right font-mono tabular-nums font-bold text-red-600">
                     <div className="inline-flex items-center justify-end gap-2">

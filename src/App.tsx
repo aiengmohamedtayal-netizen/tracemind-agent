@@ -8,19 +8,23 @@ import {
   AnalysisConfig,
   AnalysisRun,
   EvaluatedEventRecord,
+  LogFileFormat,
 } from './types/tracemind';
 import { BackendHealthStatus, traceMindApi } from './services/api';
 import { Header, NavTabId } from './components/Header';
 import { DataSourceBanner } from './components/DataSourceBanner';
-import { DashboardView } from './components/DashboardView';
 import { UploadAnalyzeView } from './components/UploadAnalyzeView';
-import { AnomaliesTableView } from './components/AnomaliesTableView';
-import { PsoAgentView } from './components/PsoAgentView';
+import { InvestigateView } from './components/InvestigateView';
+import { OverviewView } from './components/OverviewView';
 import { HistoryReportsView } from './components/HistoryReportsView';
 import { ApiContractModal } from './components/ApiContractModal';
+import { AuthGate, AuthUser } from './components/AuthGate';
+import { authenticate, endSession, restoreSession } from './services/api';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<NavTabId>('dashboard');
+  const [user,setUser]=useState<AuthUser|null>(null);
+  const [sessionReady,setSessionReady]=useState(false);
+  const [activeTab, setActiveTab] = useState<NavTabId>('overview');
   const [runs, setRuns] = useState<AnalysisRun[]>([]);
   const [activeRunId, setActiveRunId] = useState<string>('');
   const [selectedEvent, setSelectedEvent] = useState<EvaluatedEventRecord | null>(null);
@@ -34,6 +38,19 @@ export default function App() {
 
   const abortControllerRef = useRef<AbortController | null>(null);
 
+  useEffect(()=>{ restoreSession().then(setUser).finally(()=>setSessionReady(true)); },[]);
+
+  useEffect(()=>{
+    const expire=()=>{setRuns([]);setActiveRunId('');setUser(null);};
+    window.addEventListener('tracemind:session-expired',expire);
+    return ()=>window.removeEventListener('tracemind:session-expired',expire);
+  },[]);
+
+  const handleAuthenticate = async (email:string,password:string,mode:'login'|'register') => {
+    const authenticated=await authenticate(email,password,mode);
+    setUser(authenticated as AuthUser);
+  };
+
   const probeHealth = useCallback(async () => {
     setIsCheckingHealth(true);
     try {
@@ -46,6 +63,7 @@ export default function App() {
   }, []);
 
   const loadWorkspaceData = useCallback(async () => {
+    if (!user) return;
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
@@ -97,16 +115,17 @@ export default function App() {
         setIsLoadingRuns(false);
       }
     }
-  }, []);
+  }, [user]);
 
   useEffect(() => {
+    if (!user) return;
     loadWorkspaceData();
     return () => {
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
     };
-  }, [loadWorkspaceData]);
+  }, [loadWorkspaceData, user]);
 
   const activeRun = runs.find((r) => r.run_id === activeRunId) || runs[0] || null;
   const backendReachable = Boolean(healthStatus?.reachable);
@@ -115,7 +134,7 @@ export default function App() {
     datasetName: string;
     rawContent: string;
     file?: File | null;
-    formatHint?: 'CSV' | 'JSON';
+    formatHint?: LogFileFormat;
     config: AnalysisConfig;
   }): Promise<AnalysisRun> => {
     const newRun = await traceMindApi.submitEventLogAnalysis(params);
@@ -129,7 +148,7 @@ export default function App() {
 
   const handleInspectEvent = (event: EvaluatedEventRecord) => {
     setSelectedEvent(event);
-    setActiveTab('anomalies');
+    setActiveTab('investigate');
   };
 
   const handleDeleteRun = async (runId: string) => {
@@ -143,6 +162,9 @@ export default function App() {
     });
   };
 
+  if (!sessionReady) return <div className="min-h-screen grid place-items-center">Checking your session…</div>;
+  if (!user) return <AuthGate onAuthenticated={handleAuthenticate}/>;
+
   return (
     <div className="min-h-screen flex flex-col bg-slate-50/90 text-slate-900">
       <Header
@@ -150,6 +172,7 @@ export default function App() {
         onSelectTab={setActiveTab}
         anomalyCount={activeRun?.isolation_forest.anomalous_events_count || 0}
       />
+      <div className="flex justify-end bg-white px-6 py-2 text-sm text-slate-600">{user.email}<button className="ml-4 text-indigo-700" onClick={async()=>{await endSession();setRuns([]);setUser(null);}}>Sign out</button></div>
 
       <DataSourceBanner
         activeRun={activeRun}
@@ -165,8 +188,8 @@ export default function App() {
       />
 
       <main className="flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
-        {activeTab === 'dashboard' && (
-          <DashboardView
+        {activeTab === 'overview' && (
+          <OverviewView
             run={activeRun}
             isLoading={isLoadingRuns}
             backendReachable={backendReachable}
@@ -177,32 +200,24 @@ export default function App() {
           />
         )}
 
-        {activeTab === 'upload' && (
+        {activeTab === 'analyze' && (
           <UploadAnalyzeView
             onRunAnalysis={handleRunAnalysis}
-            onAnalysisCompleted={() => setActiveTab('dashboard')}
+            onAnalysisCompleted={() => setActiveTab('overview')}
           />
         )}
 
-        {activeTab === 'anomalies' && (
-          <AnomaliesTableView
+        {activeTab === 'investigate' && (
+          <InvestigateView
             run={activeRun}
             isLoading={isLoadingRuns}
             backendReachable={backendReachable}
             selectedEvent={selectedEvent}
             onSelectEvent={setSelectedEvent}
-            onNavigate={setActiveTab}
+            onInspectEvent={handleInspectEvent}
             onRetry={loadWorkspaceData}
-          />
-        )}
-
-        {activeTab === 'pso_agent' && (
-          <PsoAgentView
-            run={activeRun}
-            isLoading={isLoadingRuns}
-            backendReachable={backendReachable}
             onNavigate={setActiveTab}
-            onRetry={loadWorkspaceData}
+            loadError={loadError}
           />
         )}
 
@@ -216,7 +231,7 @@ export default function App() {
             onSelectRun={(runId) => {
               setActiveRunId(runId);
               setSelectedEvent(null);
-              setActiveTab('dashboard');
+              setActiveTab('overview');
             }}
             onDeleteRun={handleDeleteRun}
             onRefreshHistory={loadWorkspaceData}

@@ -1,4 +1,5 @@
 export type DataSourceMode = 'live_api';
+export type LogFileFormat = 'CSV' | 'JSON' | 'JSONL' | 'LOG';
 
 export type ApiConnectionState =
   | 'connected'
@@ -17,17 +18,18 @@ export type PipelineStage =
 
 export interface RawEventLogRecord {
   event_id: string;
-  timestamp: string;
+  timestamp: string | null;
   service: string;
   event_type: string;
   source_ip: string;
-  latency_ms: number;
-  error_rate: number;
-  cpu_pct: number;
-  memory_mb: number;
-  payload_bytes: number;
-  status_code: number;
+  latency_ms: number | null;
+  error_rate: number | null;
+  cpu_pct: number | null;
+  memory_mb: number | null;
+  payload_bytes: number | null;
+  status_code: number | null;
   message?: string;
+  log_features?: Record<string, number | null>;
 }
 
 export interface FeatureContribution {
@@ -137,13 +139,79 @@ export interface AgentRecommendation {
     passed: boolean;
     detail: string;
   }[];
+  /** Kept for legacy API consumers; v2 uses evidence_coverage_pct, not a confidence claim. */
+  evidence_coverage_pct?: number;
+  decision_trace?: AgentDecisionTrace;
+}
+
+export type AgentBeliefStatus = 'supported' | 'uncertain' | 'contradicted';
+
+export interface AgentEvidenceItem {
+  evidence_id: string;
+  source: 'dataset_metadata' | 'isolation_forest' | 'evaluated_event' | 'pso_optimization';
+  statement: string;
+  references: string[];
+  observed_values: Record<string, unknown>;
+}
+
+export interface AgentBelief {
+  belief_id: string;
+  statement: string;
+  status: AgentBeliefStatus;
+  supporting_evidence_ids: string[];
+  explanation: string;
+}
+
+export interface InvestigationGoal {
+  goal_id: string;
+  objective: string;
+  source_belief_ids: string[];
+  supporting_evidence_ids: string[];
+}
+
+export interface CandidateInvestigationPlan {
+  plan_id: string;
+  objective: string;
+  action_id: string;
+  action_title: string;
+  candidate_action: PSOCandidateAction;
+  goal_ids: string[];
+  supporting_evidence_ids: string[];
+  estimated_cost_usd: number | null;
+  sla_risk_score: number | null;
+  is_pso_selected: boolean;
+  selection_rationale: string;
+  rejection_reason: string | null;
+  advisory_only: boolean;
+}
+
+export interface SelectedInvestigationIntention {
+  status: 'selected' | 'no_recommendation';
+  plan_id: string | null;
+  action_id: string | null;
+  selection_reason: string;
+  supporting_evidence_ids: string[];
+  constraints_considered: string[];
+  uncertainty_and_limitations: string[];
+  advisory_only: boolean;
+}
+
+export interface AgentDecisionTrace {
+  trace_version: string;
+  evidence_considered: AgentEvidenceItem[];
+  beliefs: AgentBelief[];
+  goals: InvestigationGoal[];
+  candidate_plans: CandidateInvestigationPlan[];
+  selected_intention: SelectedInvestigationIntention;
+  missing_evidence: string[];
+  limitations: string[];
 }
 
 export interface AnalysisRun {
   run_id: string;
   created_at: string;
   dataset_name: string;
-  file_format: 'CSV' | 'JSON';
+  file_format: 'CSV' | 'JSON' | 'JSONL' | 'LOG' | 'TEXT';
   data_source: DataSourceMode;
   status: 'completed' | 'failed' | 'processing';
   duration_ms: number;

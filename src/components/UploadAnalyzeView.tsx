@@ -10,6 +10,7 @@ import {
 import {
   AnalysisConfig,
   AnalysisRun,
+  LogFileFormat,
   PipelineStage,
 } from '../types/tracemind';
 import {
@@ -23,7 +24,7 @@ interface UploadAnalyzeViewProps {
     datasetName: string;
     rawContent: string;
     file?: File | null;
-    formatHint?: 'CSV' | 'JSON';
+    formatHint?: LogFileFormat;
     config: AnalysisConfig;
   }) => Promise<AnalysisRun>;
   onAnalysisCompleted: (run: AnalysisRun) => void;
@@ -34,7 +35,7 @@ const PIPELINE_STEPS: { id: PipelineStage; label: string; detail: string }[] = [
     id: 'validating',
     label: '1. Client Pre-Flight & Schema Validation',
     detail:
-      'Verifying CSV/JSON file syntax, size limits, and required telemetry columns before network transmission.',
+      'Verifying supported log syntax, file size, and the available event fields before transmission.',
   },
   {
     id: 'submitting',
@@ -57,7 +58,7 @@ export const UploadAnalyzeView: React.FC<UploadAnalyzeViewProps> = ({
   const [datasetName, setDatasetName] = useState<string>('');
   const [rawContent, setRawContent] = useState<string>('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [formatHint, setFormatHint] = useState<'CSV' | 'JSON' | undefined>(undefined);
+  const [formatHint, setFormatHint] = useState<LogFileFormat | undefined>(undefined);
   const [config, setConfig] = useState<AnalysisConfig>(DEFAULT_ANALYSIS_CONFIG);
   const [isDraggingFile, setIsDraggingFile] = useState<boolean>(false);
 
@@ -65,13 +66,28 @@ export const UploadAnalyzeView: React.FC<UploadAnalyzeViewProps> = ({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [validationPreview, setValidationPreview] = useState<{
     recordCount: number;
-    format: 'CSV' | 'JSON';
+    format: LogFileFormat;
     services: string[];
   } | null>(null);
 
+  const handleLoadSampleData = () => {
+    const sample = `event_id,timestamp,service,event_type,source_ip,latency_ms,error_rate,cpu_pct,memory_mb,payload_bytes,status_code
+evt-01,2026-11-16T12:00:00Z,auth,LOGIN,192.168.1.10,32,0.01,22,512,256,200
+evt-02,2026-11-16T12:01:00Z,catalog,SEARCH,192.168.1.11,45,0.02,30,620,512,200
+evt-03,2026-11-16T12:02:00Z,orders,CREATE,192.168.1.12,55,0.01,35,740,1024,201
+evt-04,2026-11-16T12:03:00Z,auth,LOGIN,192.168.1.10,30,0.01,24,510,250,200
+evt-05,2026-11-16T12:04:00Z,payments,CHARGE,10.0.0.50,2850,0.85,96,4096,51200,503
+evt-06,2026-11-16T12:05:00Z,catalog,GET_ITEM,192.168.1.14,40,0.01,28,600,480,200
+evt-07,2026-11-16T12:06:00Z,orders,CHECKOUT,192.168.1.15,62,0.02,38,780,1200,200
+evt-08,2026-11-16T12:07:00Z,auth,REFRESH,192.168.1.16,28,0.01,20,490,180,200
+evt-09,2026-11-16T12:08:00Z,payments,CHARGE,10.0.0.50,3100,0.92,99,4096,62000,500
+evt-10,2026-11-16T12:09:00Z,catalog,SEARCH,192.168.1.17,48,0.01,31,630,520,200`;
+    handleContentChange(sample, 'CSV', 'sample-telemetry.csv', null);
+  };
+
   const handleContentChange = (
     newText: string,
-    hint?: 'CSV' | 'JSON',
+    hint?: LogFileFormat,
     name?: string,
     fileObj?: File | null
   ) => {
@@ -145,18 +161,31 @@ export const UploadAnalyzeView: React.FC<UploadAnalyzeViewProps> = ({
     setErrorMessage(null);
     setPipelineStage('validating');
 
-    const effectiveDatasetName =
-      datasetName.trim() || selectedFile?.name || '';
-    if (!effectiveDatasetName) {
-      setErrorMessage(
-        'Dataset / Log Stream Identifier is required. Upload a file or enter a dataset name.'
-      );
-      setPipelineStage('failed');
-      return;
+    let contentToAnalyze = rawContent.trim();
+    let effectiveDatasetName = datasetName.trim() || selectedFile?.name || '';
+    let currentFormatHint = formatHint;
+
+    if (!contentToAnalyze) {
+      contentToAnalyze = `event_id,timestamp,service,event_type,source_ip,latency_ms,error_rate,cpu_pct,memory_mb,payload_bytes,status_code
+evt-01,2026-11-16T12:00:00Z,auth,LOGIN,192.168.1.10,32,0.01,22,512,256,200
+evt-02,2026-11-16T12:01:00Z,catalog,SEARCH,192.168.1.11,45,0.02,30,620,512,200
+evt-03,2026-11-16T12:02:00Z,orders,CREATE,192.168.1.12,55,0.01,35,740,1024,201
+evt-04,2026-11-16T12:03:00Z,auth,LOGIN,192.168.1.10,30,0.01,24,510,250,200
+evt-05,2026-11-16T12:04:00Z,payments,CHARGE,10.0.0.50,2850,0.85,96,4096,51200,503
+evt-06,2026-11-16T12:05:00Z,catalog,GET_ITEM,192.168.1.14,40,0.01,28,600,480,200
+evt-07,2026-11-16T12:06:00Z,orders,CHECKOUT,192.168.1.15,62,0.02,38,780,1200,200
+evt-08,2026-11-16T12:07:00Z,auth,REFRESH,192.168.1.16,28,0.01,20,490,180,200
+evt-09,2026-11-16T12:08:00Z,payments,CHARGE,10.0.0.50,3100,0.92,99,4096,62000,500
+evt-10,2026-11-16T12:09:00Z,catalog,SEARCH,192.168.1.17,48,0.01,31,630,520,200`;
+      effectiveDatasetName = 'sample-telemetry.csv';
+      currentFormatHint = 'CSV';
+      handleContentChange(contentToAnalyze, 'CSV', 'sample-telemetry.csv', null);
+    } else if (!effectiveDatasetName) {
+      effectiveDatasetName = 'telemetry-analysis.csv';
     }
 
     try {
-      parseEventLogContent(rawContent, formatHint);
+      parseEventLogContent(contentToAnalyze, currentFormatHint);
     } catch (err) {
       setErrorMessage(
         err instanceof Error ? err.message : 'Invalid event log payload.'
@@ -169,9 +198,9 @@ export const UploadAnalyzeView: React.FC<UploadAnalyzeViewProps> = ({
       setPipelineStage('submitting');
       const resultRun = await onRunAnalysis({
         datasetName: effectiveDatasetName,
-        rawContent,
+        rawContent: contentToAnalyze,
         file: selectedFile,
-        formatHint,
+        formatHint: currentFormatHint,
         config,
       });
 
@@ -205,7 +234,7 @@ export const UploadAnalyzeView: React.FC<UploadAnalyzeViewProps> = ({
           Event-Log Ingestion &amp; Analysis Pipeline
         </h1>
         <p className="text-sm text-slate-600 mt-1 max-w-3xl">
-          Upload a structured CSV or JSON event-log file to submit to the FastAPI backend for Isolation Forest anomaly detection, Particle Swarm Optimization, and Intelligent Agent root-cause reasoning.
+          Upload a telemetry CSV, JSON/JSONL record file, or plain-text log (.log, .txt, .syslog) for server-side anomaly analysis.
         </p>
       </div>
 
@@ -241,28 +270,33 @@ export const UploadAnalyzeView: React.FC<UploadAnalyzeViewProps> = ({
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
               <div>
                 <h2 className="text-base font-bold text-slate-900">
-                  01. Event-Log Payload (CSV / JSON)
+                  01. Event-Log Payload (CSV / JSON / JSONL / TXT / LOG)
                 </h2>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Required telemetry fields:{' '}
-                  <code className="font-mono text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded">
-                    event_id, service, latency_ms, error_rate, cpu_pct
-                  </code>
-                </p>
+                <p className="text-xs text-slate-500 mt-0.5">Telemetry CSVs use their supplied metrics; raw logs are analyzed from features measured in the log text.</p>
               </div>
 
-              {(rawContent || datasetName || selectedFile) && (
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() =>
-                    handleContentChange('', undefined, '', null)
-                  }
-                  className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:text-red-600 transition-colors cursor-pointer whitespace-nowrap shrink-0"
+                  onClick={handleLoadSampleData}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors cursor-pointer whitespace-nowrap"
                 >
-                  <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
-                  Clear Input
+                  <UploadCloud className="w-3.5 h-3.5" aria-hidden="true" />
+                  Load Sample Data
                 </button>
-              )}
+                {(rawContent || datasetName || selectedFile) && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleContentChange('', undefined, '', null)
+                    }
+                    className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:text-red-600 transition-colors cursor-pointer whitespace-nowrap shrink-0"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
+                    Clear Input
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Dataset Name & Drag-and-Drop File Zone */}
@@ -305,12 +339,12 @@ export const UploadAnalyzeView: React.FC<UploadAnalyzeViewProps> = ({
                     className="w-3.5 h-3.5 text-blue-600"
                     aria-hidden="true"
                   />
-                  Upload Local File (.csv or .json)
+                  Upload a Log File (.csv, .json, .jsonl, .log, .txt)
                 </label>
                 <input
                   id="event-log-file-input"
                   type="file"
-                  accept=".csv,.json,text/csv,application/json"
+                  accept=".csv,.json,.jsonl,.ndjson,.log,.txt,.out,.syslog,.trace,text/csv,application/json,text/plain"
                   onChange={handleFileUpload}
                   className="w-full text-xs text-slate-600 file:mr-2.5 file:py-1 file:px-2.5 file:rounded-md file:border file:border-slate-300 file:text-xs file:font-semibold file:bg-white file:text-slate-800 hover:file:bg-slate-100 cursor-pointer"
                 />
@@ -338,7 +372,7 @@ export const UploadAnalyzeView: React.FC<UploadAnalyzeViewProps> = ({
                   </span>
                 ) : (
                   <span className="text-xs text-slate-500 font-mono">
-                    Upload a .csv / .json file or paste raw event records
+                    Upload a CSV, JSON, JSONL, or text log, or paste log content
                   </span>
                 )}
               </div>
@@ -347,7 +381,7 @@ export const UploadAnalyzeView: React.FC<UploadAnalyzeViewProps> = ({
                 rows={14}
                 value={rawContent}
                 onChange={(e) => handleContentChange(e.target.value)}
-                placeholder="Upload a CSV/JSON file above or paste CSV (with header row) / JSON array of event objects..."
+                placeholder="Upload a log file above or paste structured CSV, JSON/JSONL, or raw text log lines..."
                 className="w-full p-3.5 text-xs font-mono bg-slate-950 text-slate-100 rounded-xl border border-slate-800 leading-relaxed focus:outline-2 focus:outline-blue-600 shadow-inner"
               />
             </div>
@@ -356,22 +390,22 @@ export const UploadAnalyzeView: React.FC<UploadAnalyzeViewProps> = ({
 
         {/* Right 5 Columns: Model Hyperparameters & Execution Status */}
         <div className="lg:col-span-5 space-y-6">
-          <div className="tm-card p-6 space-y-5">
-            <div className="flex items-start justify-between gap-3 pb-3 border-b border-slate-100">
+          <details className="tm-card p-6 group" aria-label="Advanced model settings">
+            <summary className="flex cursor-pointer list-none items-start justify-between gap-3 [&::-webkit-details-marker]:hidden">
               <div>
                 <h2 className="text-base font-bold text-slate-900">
-                  02. Isolation Forest &amp; PSO Parameters
+                  Advanced model settings
                 </h2>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Configure contamination rate and swarm optimization hyperparameters submitted to the backend
+                  Optional Isolation Forest and PSO controls. Defaults are ready for a standard analysis.
                 </p>
               </div>
               <div className="p-2 rounded-lg bg-slate-100 text-slate-600">
                 <Sliders className="w-4 h-4" aria-hidden="true" />
               </div>
-            </div>
+            </summary>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-slate-100 pt-5">
               <div>
                 <label
                   htmlFor="contamination-input"
@@ -406,7 +440,7 @@ export const UploadAnalyzeView: React.FC<UploadAnalyzeViewProps> = ({
                 <input
                   id="estimators-input"
                   type="number"
-                  step="10"
+                  step="1"
                   min="25"
                   max="500"
                   value={config.n_estimators}
@@ -478,7 +512,7 @@ export const UploadAnalyzeView: React.FC<UploadAnalyzeViewProps> = ({
                 <input
                   id="inertia-input"
                   type="number"
-                  step="0.05"
+                  step="any"
                   min="0.2"
                   max="1.2"
                   value={config.inertia_weight}
@@ -502,7 +536,7 @@ export const UploadAnalyzeView: React.FC<UploadAnalyzeViewProps> = ({
                 <input
                   id="cognitive-input"
                   type="number"
-                  step="0.05"
+                  step="any"
                   min="0.5"
                   max="2.5"
                   value={config.cognitive_coeff}
@@ -519,19 +553,24 @@ export const UploadAnalyzeView: React.FC<UploadAnalyzeViewProps> = ({
               </div>
             </div>
 
-            <div className="pt-2">
-              <button
-                type="submit"
-                disabled={isProcessing}
-                className="tm-btn-primary w-full py-2.5 px-4 text-sm disabled:opacity-60"
-              >
-                <Play className="w-4 h-4 fill-current" aria-hidden="true" />
-                {isProcessing
-                  ? 'Submitting to FastAPI Backend...'
-                  : 'Run TraceMind Analysis Pipeline'}
-              </button>
+          </details>
+
+          {errorMessage && (
+            <div className="p-3 bg-red-50 border border-red-200 text-red-800 rounded-xl text-xs font-medium">
+              ⚠️ {errorMessage}
             </div>
-          </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={isProcessing}
+            className="tm-btn-primary w-full py-2.5 px-4 text-sm disabled:opacity-60"
+          >
+            <Play className="w-4 h-4 fill-current" aria-hidden="true" />
+            {isProcessing
+              ? 'Submitting to FastAPI Backend...'
+              : 'Run TraceMind Analysis Pipeline'}
+          </button>
 
           {/* Pipeline Stage Tracker */}
           <div className="tm-card p-6">

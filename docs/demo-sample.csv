@@ -1,0 +1,9 @@
+event_id,timestamp,service,latency_ms,error_rate,cpu_pct,memory_mb,payload_bytes,status_code
+evt-001,2026-01-01T10:00:00Z,auth-service,45,0.01,22,180,512,200
+evt-002,2026-01-01T10:00:01Z,auth-service,52,0.02,25,195,480,200
+evt-003,2026-01-01T10:00:02Z,api-gateway,8900,0.95,97,980,2048,503
+evt-004,2026-01-01T10:00:03Z,auth-service,48,0.01,24,188,500,200
+evt-005,2026-01-01T10:00:04Z,auth-service,51,0.02,23,192,490,200
+evt-006,2026-01-01T10:00:05Z,cache-service,7500,0.88,91,850,1800,500
+evt-007,2026-01-01T10:00:06Z,auth-service,49,0.01,22,185,505,200
+evt-008,2026-01-01T10:00:07Z,auth-service,47,0.02,21,182,495,200

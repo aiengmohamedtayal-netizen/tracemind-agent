@@ -5,11 +5,17 @@ from copy import deepcopy
 from app.services.action_catalog import build_candidate_actions
 from app.services.agent.beliefs import build_beliefs
 from app.services.agent.evidence import build_evidence
-from app.services.agent.planning import generate_candidate_plans, generate_goals, select_intention
+from app.services.agent.planning import generate_candidate_plans, generate_goals
 from app.services.anomaly_detection import detect_anomalies
 from app.services.intelligent_agent import build_recommendation
 from app.services.pso_optimizer import optimize_actions
-from validation.fixtures import ISOLATION_FOREST_BASELINE, PSO_BASELINE, constant_events, copy_events, labelled_outlier_events
+from validation.fixtures import (
+    ISOLATION_FOREST_BASELINE,
+    PSO_BASELINE,
+    constant_events,
+    copy_events,
+    labelled_outlier_events,
+)
 
 
 def _real_agent_inputs():

@@ -9,7 +9,6 @@ import jwt
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pwdlib import PasswordHash
-from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
@@ -52,10 +51,4 @@ def get_current_user(credentials: HTTPAuthorizationCredentials | None = Depends(
     user = session.get(UserModel, user_id)
     if user is None or not user.is_active:
         raise _unauthorized()
-    return user
-
-
-def require_admin(user: UserModel = Depends(get_current_user)) -> UserModel:
-    if user.role != "admin":
-        raise HTTPException(status_code=403, detail="Administrator role required.")
     return user

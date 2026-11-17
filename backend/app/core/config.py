@@ -3,9 +3,8 @@ from __future__ import annotations
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import model_validator
 
 
 class Settings(BaseSettings):
@@ -24,6 +23,7 @@ class Settings(BaseSettings):
     access_token_minutes: int = Field(default=10, ge=1, le=60)
     refresh_token_days: int = Field(default=14, ge=1, le=90)
     auth_enabled: bool = True
+    auth_rate_limit: str = "5/minute"
 
     @model_validator(mode="after")
     def require_production_secret(self):

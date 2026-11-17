@@ -33,21 +33,21 @@ interface UploadAnalyzeViewProps {
 const PIPELINE_STEPS: { id: PipelineStage; label: string; detail: string }[] = [
   {
     id: 'validating',
-    label: '1. Client Pre-Flight & Schema Validation',
+    label: '1. Check your file',
     detail:
-      'Verifying supported log syntax, file size, and the available event fields before transmission.',
+      'Makes sure the file format, size (under 25 MB), and columns look valid before sending.',
   },
   {
     id: 'submitting',
-    label: '2. FastAPI Backend Pipeline Execution (POST /analyze)',
+    label: '2. Detect anomalies & pick best check',
     detail:
-      'Transmitting payload to backend for server-side Isolation Forest scoring, PSO action optimization, and Intelligent Agent synthesis.',
+      'Runs Isolation Forest to spot unusual rows, PSO to pick the best read-only check, and the Agent to write your report.',
   },
   {
     id: 'completed',
-    label: '3. Backend Response Validation & Workspace Sync',
+    label: '3. Save & open results',
     detail:
-      'Validating returned AnalysisRun schema and populating dashboard views with real backend results.',
+      'Saves the finished report to your account history and opens the Overview summary.',
   },
 ];
 
@@ -228,13 +228,13 @@ evt-10,2026-11-16T12:09:00Z,catalog,SEARCH,192.168.1.17,48,0.01,31,630,520,200`;
     >
       <div className="border-b border-slate-800/80 pb-5">
         <div className="text-xs font-semibold text-cyan-400 font-mono tracking-wide uppercase mb-1">
-          Data Ingestion &amp; Model Configuration
+          Step 1 — Upload Logs
         </div>
         <h1 className="text-2xl sm:text-[26px] font-bold tracking-tight text-white">
-          Event-Log Ingestion &amp; Analysis Pipeline
+          Upload &amp; Analyze Event Logs
         </h1>
         <p className="text-sm text-slate-400 mt-1 max-w-3xl">
-          Upload a telemetry CSV, JSON/JSONL record file, or plain-text log (.log, .txt, .syslog) for server-side anomaly analysis.
+          Drop a CSV, JSON, JSONL, or plain .log/.txt file — or click <strong className="text-slate-200">Load Sample Data</strong> to test right away. TraceMind finds unusual rows and recommends a safe, read-only check.
         </p>
       </div>
 

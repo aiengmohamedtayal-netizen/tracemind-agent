@@ -39,8 +39,14 @@ class AnalysisRepository:
         if event_rows:
             session.execute(insert(EventRecordModel), event_rows)
 
-    def list_runs(self, session: Session, owner_id: int) -> list[dict]:
-        runs = session.scalars(select(AnalysisRunModel).where(AnalysisRunModel.owner_id == owner_id).order_by(AnalysisRunModel.created_at.desc())).all()
+    def list_runs(self, session: Session, owner_id: int, limit: int = 20, offset: int = 0) -> list[dict]:
+        runs = session.scalars(
+            select(AnalysisRunModel)
+            .where(AnalysisRunModel.owner_id == owner_id)
+            .order_by(AnalysisRunModel.created_at.desc())
+            .limit(limit)
+            .offset(offset)
+        ).all()
         return [run.result_json for run in runs]
 
     def get_run(self, session: Session, run_id: str, owner_id: int) -> dict:

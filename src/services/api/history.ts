@@ -27,23 +27,6 @@ export async function fetchAnalysisHistory(
 }
 
 /**
- * Fetches a single persisted AnalysisRun by ID from GET /history/:run_id.
- */
-export async function fetchAnalysisById(
-  runId: string,
-  signal?: AbortSignal
-): Promise<AnalysisRun> {
-  const payload = await apiRequest<unknown>(
-    API_CONFIG.endpoints.historyDetail(runId),
-    {
-      method: 'GET',
-      signal,
-    }
-  );
-  return validateAnalysisRunResponse(payload);
-}
-
-/**
  * Sends a DELETE request to /history/:run_id to remove a persisted run on the backend.
  */
 export async function deleteAnalysisRunById(

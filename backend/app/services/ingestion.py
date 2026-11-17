@@ -78,7 +78,11 @@ def _parse_csv(content: str) -> list[dict[str, Any]]:
             "level", "severity", "component", "logger", "host", "content", "log", "text", "raw",
         })
         if not recognized:
-            return _parse_text(content)
+            raise ValidationError(
+                "CSV header does not contain any recognized telemetry or log columns. "
+                "Provide the required telemetry columns or standard log columns (e.g., timestamp, level, service, message), "
+                "or upload plain text logs as .log or .txt."
+            )
         return [
             {str(key).strip().lstrip("\ufeff").lower(): value for key, value in row.items() if key is not None}
             for row in reader if any(value not in (None, "") for value in row.values())

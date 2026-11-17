@@ -52,6 +52,7 @@ test('analyzes a 100,000-row telemetry CSV in the browser', async ({ page }) => 
   await page.getByRole('link', { name: 'History' }).click();
   const runRow = page.getByRole('row').filter({ hasText: filename });
   await expect(runRow).toBeVisible();
+  page.once('dialog', (dialog) => dialog.accept());
   await runRow.getByRole('button', { name: /^Delete run / }).click();
   await expect(runRow).toHaveCount(0);
 });

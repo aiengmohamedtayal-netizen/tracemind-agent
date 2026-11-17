@@ -16,7 +16,9 @@ def build_candidate_actions(events: list[dict], summary: dict) -> list[dict]:
     avg_latency = sum(event["latency_ms"] for event in population) / len(population)
     error_status_ratio = sum(event["status_code"] >= 400 for event in population) / len(population)
 
-    # Benefit is a documented heuristic (0–100) derived only from measured log characteristics.
+    # Benefit is an uncalibrated, documented heuristic (0–100) derived from measured log characteristics.
+    # Weights below are domain-informed display/ranking heuristics (not calibrated against labeled incident outcomes);
+    # cost, risk, and latency are fixed catalog metadata. See docs/validation/pso-design-rationale.md.
     return [
         _action("ACT-SERVICE", "SERVICE_SCOPE", "Inspect anomalous service cohort", service,
                 "Read-only grouping of anomalous records by service, endpoint, and event type.",

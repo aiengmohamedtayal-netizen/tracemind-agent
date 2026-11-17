@@ -9,7 +9,7 @@ Status legend: Done locally, Partial, Not done, Blocked on external/user input.
 | Input validation | Partial | Pydantic and parser validation exist; enforce body limits during streaming and bound event count/compute. |
 | Authentication / authorization / tenant isolation | Not done | Define user identity and ownership model before public exposure. |
 | Rate limits / concurrency / timeouts | Not done | Add bounded request and analysis concurrency controls. |
-| History pagination / summary response | Not done | Add stable cursor or page pagination and avoid returning all event arrays. |
+| History pagination / summary response | Implemented (`?limit=&offset=`, default 20, max 100) | Offset pagination added to `GET /api/history`; summary-only projection remains optional future work. |
 | Database migrations | Not done | Add Alembic baseline and migration tests without altering existing data. |
 | PostgreSQL | Not done | Configure driver, compose service, health checks, migrations, and rehearsed backup/restore. |
 | Audit/security logging | Partial | Request ID and safe generic 500 response exist; add structured logs without event payload leakage. |

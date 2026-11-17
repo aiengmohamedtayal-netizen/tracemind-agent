@@ -398,7 +398,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="flex items-start justify-between gap-3">
             <div>
               <div className="text-xs font-semibold text-slate-500">
-                Events Analyzed (Isolation Forest)
+                Total Rows Checked
               </div>
               <div className="mt-2 flex items-baseline gap-2.5">
                 <span
@@ -417,15 +417,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
           </div>
           <p className="mt-3 pt-2.5 border-t border-slate-100 text-xs text-slate-600">
-            Mean anomaly score{' '}
+            Average unusualness{' '}
             <span className="font-mono font-semibold text-slate-800">
               {iforest.mean_anomaly_score}
             </span>{' '}
-            (max{' '}
+            (highest{' '}
             <span className="font-mono font-semibold text-slate-800">
               {iforest.max_anomaly_score}
             </span>
-            )
+            , scale 0–1)
           </p>
         </div>
 
@@ -433,7 +433,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="flex items-start justify-between gap-3">
             <div>
               <div className="text-xs font-semibold text-slate-500">
-                Detected Anomalies
+                Unusual Rows (Anomalies)
               </div>
               <div className="mt-2 flex items-baseline gap-2.5">
                 <span
@@ -443,7 +443,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   <AnimatedValue value={iforest.anomalous_events_count} />
                 </span>
                 <span className="text-xs font-semibold text-red-700 font-mono tabular-nums">
-                  {iforest.anomaly_rate_pct}% of window
+                  {iforest.anomaly_rate_pct}% of file
                 </span>
               </div>
             </div>
@@ -452,11 +452,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
           </div>
           <p className="mt-3 pt-2.5 border-t border-slate-100 text-xs text-slate-600">
-            Threshold score{' '}
+            Anomaly cutoff{' '}
             <span className="font-mono font-semibold text-slate-800">
-              &ge; {iforest.threshold_score}
+              {iforest.threshold_score != null ? `≥ ${iforest.threshold_score}` : 'N/A (no anomalies)'}
             </span>{' '}
-            ({iforest.normal_events_count} nominal records)
+            · {iforest.normal_events_count} normal rows
           </p>
         </div>
 
@@ -464,7 +464,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="flex items-start justify-between gap-3">
             <div>
               <div className="text-xs font-semibold text-slate-500">
-                PSO Optimal Fitness Score
+                Best Check Score (PSO)
               </div>
               <div className="mt-2 flex items-baseline gap-2.5">
                 <span
@@ -475,7 +475,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   <span className="text-base font-normal text-slate-400">/100</span>
                 </span>
                 <span className="text-xs text-emerald-700 font-semibold font-mono tabular-nums">
-                  Converged iter #{pso.converged_at_iteration}
+                  {pso.converged_at_iteration != null && pso.converged_at_iteration > 0
+                    ? `Found at step #${pso.converged_at_iteration}`
+                    : 'Best at init'}
                 </span>
               </div>
             </div>
@@ -484,15 +486,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
           </div>
           <p className="mt-3 pt-2.5 border-t border-slate-100 text-xs text-slate-600">
-            Swarm:{' '}
-            <span className="font-mono font-semibold text-slate-800">
-              {pso.swarm_size}
-            </span>{' '}
-            particles ·{' '}
-            <span className="font-mono font-semibold text-slate-800">
-              {pso.max_iterations}
-            </span>{' '}
-            max iterations
+            Higher = better balance of usefulness, cost, risk, and speed ({pso.swarm_size} particles · {pso.max_iterations} steps)
           </p>
         </div>
 
@@ -500,7 +494,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="flex items-start justify-between gap-3">
             <div>
               <div className="text-xs font-semibold text-slate-500">
-                Selected Remediation Action Cost
+                Selected Check Effort Cost
               </div>
               <div className="mt-2 flex items-baseline gap-2.5">
                 <span
@@ -509,8 +503,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 >
                   <AnimatedValue value={pso.optimized_cost_usd} prefix="$" />
                 </span>
-                <span className="text-xs text-emerald-700 font-semibold font-mono tabular-nums">
-                  -{pso.estimated_savings_pct}% vs baseline
+                <span
+                  className="text-xs text-emerald-700 font-semibold font-mono tabular-nums"
+                  title="Savings relative to running all 5 candidate checks"
+                >
+                  -{pso.estimated_savings_pct}% vs running all 5
                 </span>
               </div>
             </div>
@@ -522,11 +519,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             className="mt-3 pt-2.5 border-t border-slate-100 text-xs text-slate-600 truncate"
             title={pso.selected_action?.action_code}
           >
-            Action:{' '}
+            Notional cost for{' '}
             <span className="font-mono font-semibold text-slate-800">
               {pso.selected_action?.action_id || '—'}
             </span>{' '}
-            ({pso.selected_action?.mitigation_efficacy_pct ?? 0}% efficacy)
+            ({pso.selected_action?.mitigation_efficacy_pct ?? 0}% estimated usefulness)
           </p>
         </div>
       </section>
@@ -542,10 +539,17 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   01. Isolation Forest Score Distribution
                 </h2>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Decision score histogram across {iforest.total_events} events (anomaly cutoff &ge;{' '}
-                  <span className="font-mono font-semibold text-slate-700">
-                    {iforest.threshold_score}
-                  </span>
+                  Decision score histogram across {iforest.total_events} events (
+                  {iforest.threshold_score != null ? (
+                    <>
+                      anomaly cutoff &ge;{' '}
+                      <span className="font-mono font-semibold text-slate-700">
+                        {iforest.threshold_score}
+                      </span>
+                    </>
+                  ) : (
+                    'no anomalies detected'
+                  )}
                   )
                 </p>
               </div>
@@ -731,7 +735,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
                 {areaPoints && <polygon points={areaPoints} fill="url(#psoAreaGrad)" />}
 
-                {pso.converged_at_iteration <= history.length && history.length > 0 && (
+                {pso.converged_at_iteration != null && pso.converged_at_iteration >= 1 && pso.converged_at_iteration <= history.length && history.length > 0 && (
                   <g>
                     <line
                       x1={toX(pso.converged_at_iteration - 1)}

@@ -20,7 +20,7 @@ This inventory was captured before the UX simplification work. It is the regress
 | Agent findings/steps/guardrails | Dashboard/PSO & Agent | Investigate → Recommendation | `agent_recommendation` | Full agent detail retained |
 | Historical list/select | History & Reports/DataSourceBanner | History/global run selector | `GET /api/history`, `GET /api/history/{id}` | Actual stored data remains selected |
 | Historical event retrieval | Events service | Investigate → Events | `GET /api/history/{id}/events` | Service remains available |
-| Delete analysis | History & Reports | History | `DELETE /api/history/{id}` | UI updates only after resolved delete request |
+| Delete analysis | History & Reports | History | `DELETE /api/history/{id}` | UI updates only after resolved delete request; a confirmation dialog is presented before deletion. |
 | Empty/loading/error states | All views | All views | API services | No fabricated analysis data |
 
 ## Regression acceptance
@@ -41,7 +41,7 @@ This inventory was captured before the UX simplification work. It is the regress
 | Events and event inspector | Moved | Search, filters, sort, export, row selection, and feature-contribution inspector remain under Investigate → Events. |
 | PSO and agent details | Moved | Candidates, convergence, selected action, agent reasoning, runbook, and guardrails remain under Investigate → Recommendation. |
 | Charts and technical evidence | Moved | Score distribution, feature importance, and existing technical dashboard charts remain under Investigate → Model evidence. |
-| Historical data and deletion | Preserved | The existing services and confirmed-delete UI flow are unchanged. Live API verification passed. |
+| Historical data and deletion | Preserved | The existing services and confirm-dialog delete UI flow are unchanged. Live API verification passed. |
 | Accessibility | Improved | Native `details`/`summary`, labeled tab buttons, focus-visible states, semantic headings, and existing reduced-motion CSS are retained. |
 | Missing functionality | None | No frontend feature was intentionally removed. |
 
@@ -49,7 +49,7 @@ This inventory was captured before the UX simplification work. It is the regress
 
 Verified through the Vite proxy at `http://localhost:3000/api` against FastAPI:
 
-- `GET /health` returned `200` and `sqlite_connected`.
+- `GET /health` returned `200` and `sqlite_connected` (note: the `/health` route binding was fixed to correctly expose the health handler; previously it was bound to the wrong endpoint).
 - `POST /analyze` persisted a four-event JSON run, detected one anomaly, and returned a real PSO action.
 - `GET /history`, `GET /history/{run_id}`, and `GET /history/{run_id}/events` returned the persisted run and four event records.
 - `DELETE /history/{run_id}` returned `204`; a following `GET` returned `404`.

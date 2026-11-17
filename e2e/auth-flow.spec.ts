@@ -31,7 +31,7 @@ test('register, analyze, inspect, persist, logout and restore through browser', 
   await page.getByRole('button',{name:'Create account'}).click();
   await expect(page.getByRole('button',{name:'Please wait…'})).toBeDisabled();
   await expect(page.getByRole('button',{name:'New Log Analysis'})).toBeVisible();
-  await expect(page.getByRole('heading',{name:/See what your systems reveal/})).toBeVisible();
+  await expect(page.getByRole('heading',{name:/Stop Hunting Needles in Log Stacks/})).toBeVisible();
   const cookie= (await context.cookies()).find(c=>c.name==='tracemind_refresh');
   expect(cookie?.httpOnly).toBeTruthy(); expect(cookie?.sameSite).toBe('Strict'); expect(cookie?.secure).toBeFalsy();
   expect(await page.evaluate(()=>Object.keys(localStorage))).toEqual([]);

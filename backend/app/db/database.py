@@ -8,16 +8,17 @@ from app.core.config import get_settings
 settings = get_settings()
 engine = create_engine(
     settings.database_url,
-    connect_args={"check_same_thread": False} if settings.database_url.startswith("sqlite") else {},
+    connect_args={"check_same_thread": False, "timeout": 30} if settings.database_url.startswith("sqlite") else {},
     pool_pre_ping=True,
 )
 
 
 @event.listens_for(engine, "connect")
-def enable_sqlite_foreign_keys(dbapi_connection, _connection_record) -> None:  # type: ignore[no-untyped-def]
+def configure_sqlite(dbapi_connection, _connection_record) -> None:
     if settings.database_url.startswith("sqlite"):
         cursor = dbapi_connection.cursor()
         cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.execute("PRAGMA journal_mode=WAL")
         cursor.close()
 
 

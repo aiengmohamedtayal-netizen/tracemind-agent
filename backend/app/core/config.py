@@ -24,6 +24,7 @@ class Settings(BaseSettings):
     access_token_minutes: int = Field(default=10, ge=1, le=60)
     refresh_token_days: int = Field(default=14, ge=1, le=90)
     auth_enabled: bool = True
+    auth_rate_limit: str = "5/minute"
 
     @model_validator(mode="after")
     def require_production_secret(self):

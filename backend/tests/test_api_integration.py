@@ -31,7 +31,7 @@ def test_invalid_data_is_reported_without_persistence(client, valid_events):
     response = client.post("/api/analyze", json={"dataset_name": "invalid.json", "format": "JSON", "content": json.dumps(invalid)}, headers=auth)
     assert response.status_code == 422
     assert "missing fields" in response.json()["detail"]
-    assert client.get("/api/history", headers=auth).json() == {"runs": []}
+    assert client.get("/api/history", headers=auth).json() == {"runs": [], "limit": 20, "offset": 0}
 
 
 def test_multipart_csv_submission_matches_frontend_contract(client, valid_events):

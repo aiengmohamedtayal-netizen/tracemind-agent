@@ -12,10 +12,10 @@ from starlette.middleware.gzip import GZipMiddleware
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
-from app.api.routes import router
+from app.api.routes import router, health as health_handler
 from app.core.config import get_settings
 from app.core.exceptions import DomainError
-from app.db.database import engine
+from app.db.database import engine, Base
 from app.api.routes import limiter
 
 settings = get_settings()
@@ -25,6 +25,10 @@ logger = logging.getLogger("tracemind")
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
+    # Safety net: create tables if they don't exist (alembic migrations are the canonical path).
+    Base.metadata.create_all(bind=engine)
+    logger.info("Database tables verified/created.")
+    logger.info("Models available: IsolationForest, PSO, IntelligentAgent.")
     yield
 
 
@@ -37,7 +41,7 @@ app.add_middleware(
     allow_origins=settings.cors_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "DELETE"],
-    allow_headers=["Accept", "Content-Type"],
+    allow_headers=["Accept", "Content-Type", "Authorization", "X-Request-ID"],
 )
 
 
@@ -73,4 +77,4 @@ async def request_validation_handler(_: Request, exc: RequestValidationError) ->
 
 app.include_router(router, prefix="/api")
 # Direct health endpoint is useful for deployment probes while the frontend uses /api/health.
-app.add_api_route("/health", router.routes[0].endpoint, methods=["GET"], include_in_schema=False)
+app.add_api_route("/health", health_handler, methods=["GET"], include_in_schema=False)

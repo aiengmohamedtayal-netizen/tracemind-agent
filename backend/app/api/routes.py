@@ -25,10 +25,11 @@ from slowapi.util import get_remote_address
 router = APIRouter()
 repository = AnalysisRepository()
 limiter = Limiter(key_func=get_remote_address)
+_auth_limit = get_settings().auth_rate_limit
 
 
 @router.post("/auth/register", status_code=201)
-@limiter.limit("5/minute")
+@limiter.limit(_auth_limit)
 def register(request: Request, credentials: Credentials, session: Session = Depends(get_session)) -> dict:
     email = str(credentials.email).strip().lower()
     if session.scalar(select(UserModel).where(UserModel.email == email)):
@@ -44,7 +45,7 @@ def register(request: Request, credentials: Credentials, session: Session = Depe
 
 
 @router.post("/auth/login")
-@limiter.limit("5/minute")
+@limiter.limit(_auth_limit)
 def login(request: Request, credentials: Credentials, session: Session = Depends(get_session)) -> dict:
     email = str(credentials.email).strip().lower()
     user = session.scalar(select(UserModel).where(UserModel.email == email))
@@ -179,8 +180,13 @@ def _analyze_and_persist(
 
 
 @router.get("/history")
-def list_history(session: Session = Depends(get_session), user: UserModel = Depends(get_current_user)) -> dict[str, list[dict]]:
-    return {"runs": repository.list_runs(session, user.id)}
+def list_history(
+    limit: int = 20,
+    offset: int = 0,
+    session: Session = Depends(get_session),
+    user: UserModel = Depends(get_current_user),
+) -> dict:
+    return {"runs": repository.list_runs(session, user.id, limit=limit, offset=offset), "limit": limit, "offset": offset}
 
 
 @router.get("/history/{run_id}")

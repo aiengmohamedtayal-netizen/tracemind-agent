@@ -104,7 +104,7 @@ def detect_anomalies(events: list[dict], *, contamination: float, n_estimators: 
         "n_estimators": n_estimators,
         "contamination": contamination,
         "sample_size": len(events),
-        "threshold_score": round(min(anomaly_scores_only), 6) if anomaly_scores_only else 1.0,
+        "threshold_score": round(min(anomaly_scores_only), 6) if anomaly_scores_only else None,
         "total_events": len(events),
         "anomalous_events_count": len(anomaly_scores_only),
         "normal_events_count": len(events) - len(anomaly_scores_only),

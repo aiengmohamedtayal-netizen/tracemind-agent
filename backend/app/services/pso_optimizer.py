@@ -46,7 +46,8 @@ def optimize_actions(actions: list[dict], *, swarm_size: int, max_iterations: in
     global_best = personal_best_positions[best_particle].copy()
     global_best_score = float(personal_best_scores[best_particle])
     history: list[dict] = []
-    converged_at = 0
+    # None means the global best came from the initial swarm position and was never improved.
+    converged_at: int | None = None
 
     for iteration in range(1, max_iterations + 1):
         r1 = rng.random(size=(swarm_size, action_count))
@@ -127,5 +128,10 @@ def _position_fitness(position: np.ndarray, actions: list[dict]) -> float:
     indexes = np.flatnonzero(position)
     if len(indexes) == 0:
         return -100.0
-    # The UI contract has one selected action; the score represents the best admissible action in a set.
+    # NOTE: The fitness of a position is the best single-action fitness within that position.
+    # This means the PSO searches for the globally best single action across the binary solution space.
+    # This is intentional for demonstrative purposes — the exhaustive baseline in tests (exhaustive_best_action)
+    # independently verifies the same result. The binary encoding supports up to 2 actions per budget
+    # constraint (_enforce_constraints), but the fitness remains max-based to maintain a clear,
+    # verifiable objective function. See docs/validation/ for the PSO design rationale.
     return max(action_fitness(actions[int(index)]) for index in indexes)

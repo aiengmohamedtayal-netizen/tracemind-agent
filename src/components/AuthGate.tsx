@@ -6,5 +6,54 @@ export function AuthGate({onAuthenticated}: {onAuthenticated:(email:string,passw
   const [email,setEmail]=useState(''); const [password,setPassword]=useState('');
   const [error,setError]=useState(''); const [busy,setBusy]=useState(false);
   async function submit(event:FormEvent) { event.preventDefault(); setBusy(true); setError(''); try { await onAuthenticated(email,password,mode); } catch(e) { setError(e instanceof Error?e.message:'Unable to sign in. Please try again.'); } finally { setBusy(false); } }
-  return <main className="min-h-screen grid place-items-center bg-slate-50 p-5"><form onSubmit={submit} className="w-full max-w-md rounded-2xl bg-white p-8 shadow-lg space-y-5"><div><p className="text-sm text-indigo-600 font-semibold">TraceMind</p><h1 className="text-2xl font-bold mt-2">{mode==='login'?'Sign in':'Create your account'}</h1><p className="text-slate-500 mt-2">Your analysis history is private to your account.</p></div><label className="block text-sm">Email address<input required type="email" autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} className="mt-1 w-full rounded-lg border p-3" /></label><label className="block text-sm">Password<input required minLength={12} maxLength={128} type="password" autoComplete={mode==='login'?'current-password':'new-password'} value={password} onChange={e=>setPassword(e.target.value)} className="mt-1 w-full rounded-lg border p-3" /><span className="text-xs text-slate-500">At least 12 characters</span></label>{error&&<p role="alert" className="text-sm text-red-700">{error}</p>}<button disabled={busy} className="w-full rounded-lg bg-indigo-600 p-3 text-white disabled:opacity-50">{busy?'Please wait…':mode==='login'?'Sign in':'Create account'}</button><button type="button" className="w-full text-sm text-indigo-700" onClick={()=>setMode(mode==='login'?'register':'login')}>{mode==='login'?'New here? Create an account':'Already have an account? Sign in'}</button></form></main>;
+  return (
+    <main className="min-h-screen grid place-items-center bg-[#060913] text-slate-100 p-5">
+      <form onSubmit={submit} className="w-full max-w-md rounded-2xl bg-[#0B0F19] border border-slate-800 p-8 shadow-2xl space-y-5">
+        <div>
+          <p className="text-sm text-cyan-400 font-semibold tracking-wide uppercase font-mono">TraceMind Incident Intelligence</p>
+          <h1 className="text-2xl font-bold mt-2 text-white">{mode === 'login' ? 'Sign in to TraceMind' : 'Create your account'}</h1>
+          <p className="text-slate-400 text-sm mt-2">Your analysis history and telemetry data are private to your account.</p>
+        </div>
+        <label className="block text-sm font-medium text-slate-300">
+          Email address
+          <input
+            required
+            type="email"
+            autoComplete="email"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            className="mt-1 w-full rounded-lg bg-slate-900 border border-slate-700/80 p-3 text-slate-100 focus:border-cyan-400 focus:outline-none focus:ring-1 focus:ring-cyan-400/50"
+          />
+        </label>
+        <label className="block text-sm font-medium text-slate-300">
+          Password
+          <input
+            required
+            minLength={12}
+            maxLength={128}
+            type="password"
+            autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            className="mt-1 w-full rounded-lg bg-slate-900 border border-slate-700/80 p-3 text-slate-100 focus:border-cyan-400 focus:outline-none focus:ring-1 focus:ring-cyan-400/50"
+          />
+          <span className="text-xs text-slate-500 mt-1 block font-mono">At least 12 characters</span>
+        </label>
+        {error && <p role="alert" className="text-sm text-rose-400 bg-rose-950/40 border border-rose-800/60 rounded-lg p-2.5">{error}</p>}
+        <button
+          disabled={busy}
+          className="w-full rounded-lg bg-gradient-to-r from-cyan-500 to-indigo-600 p-3 text-white font-medium hover:from-cyan-400 hover:to-indigo-500 transition-all shadow-lg shadow-cyan-500/20 disabled:opacity-50"
+        >
+          {busy ? 'Please wait…' : mode === 'login' ? 'Sign in' : 'Create account'}
+        </button>
+        <button
+          type="button"
+          className="w-full text-sm text-cyan-400 hover:text-cyan-300 transition-colors"
+          onClick={() => setMode(mode === 'login' ? 'register' : 'login')}
+        >
+          {mode === 'login' ? 'New here? Create an account' : 'Already have an account? Sign in'}
+        </button>
+      </form>
+    </main>
+  );
 }

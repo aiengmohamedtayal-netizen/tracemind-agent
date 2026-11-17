@@ -226,14 +226,14 @@ evt-10,2026-11-16T12:09:00Z,catalog,SEARCH,192.168.1.17,48,0.01,31,630,520,200`;
       transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
       className="space-y-8"
     >
-      <div className="border-b border-slate-200/90 pb-5">
-        <div className="text-xs font-semibold text-blue-600 mb-1">
+      <div className="border-b border-slate-800/80 pb-5">
+        <div className="text-xs font-semibold text-cyan-400 font-mono tracking-wide uppercase mb-1">
           Data Ingestion &amp; Model Configuration
         </div>
-        <h1 className="text-2xl sm:text-[26px] font-bold tracking-tight text-slate-900">
+        <h1 className="text-2xl sm:text-[26px] font-bold tracking-tight text-white">
           Event-Log Ingestion &amp; Analysis Pipeline
         </h1>
-        <p className="text-sm text-slate-600 mt-1 max-w-3xl">
+        <p className="text-sm text-slate-400 mt-1 max-w-3xl">
           Upload a telemetry CSV, JSON/JSONL record file, or plain-text log (.log, .txt, .syslog) for server-side anomaly analysis.
         </p>
       </div>

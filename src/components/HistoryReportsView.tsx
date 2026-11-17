@@ -85,15 +85,15 @@ export const HistoryReportsView: React.FC<HistoryReportsViewProps> = ({
       transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
       className="space-y-8"
     >
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200/90 pb-5">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-800/80 pb-5">
         <div>
-          <div className="text-xs font-semibold text-blue-600 mb-1">
+          <div className="text-xs font-semibold text-cyan-400 font-mono tracking-wide uppercase mb-1">
             SQLite Persistence &amp; Audit Reports
           </div>
-          <h1 className="text-2xl sm:text-[26px] font-bold tracking-tight text-slate-900">
+          <h1 className="text-2xl sm:text-[26px] font-bold tracking-tight text-white">
             Analysis History &amp; Audit Reports
           </h1>
-          <p className="text-sm text-slate-600 mt-1">
+          <p className="text-sm text-slate-400 mt-1">
             Inspect historical Isolation Forest and PSO analysis runs persisted by the FastAPI/SQLite backend, switch the active workspace run, or export structured JSON/CSV audit reports.
           </p>
         </div>

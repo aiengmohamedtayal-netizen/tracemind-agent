@@ -162,17 +162,16 @@ export default function App() {
     });
   };
 
-  if (!sessionReady) return <div className="min-h-screen grid place-items-center">Checking your session…</div>;
+  if (!sessionReady) return <div className="min-h-screen grid place-items-center bg-[#060913] text-slate-300 font-mono text-sm">Checking your session…</div>;
   if (!user) return <AuthGate onAuthenticated={handleAuthenticate}/>;
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50/90 text-slate-900">
+    <div className="min-h-screen flex flex-col bg-[#060913] text-slate-100">
       <Header
         activeTab={activeTab}
         onSelectTab={setActiveTab}
         anomalyCount={activeRun?.isolation_forest.anomalous_events_count || 0}
       />
-      <div className="flex justify-end bg-white px-6 py-2 text-sm text-slate-600">{user.email}<button className="ml-4 text-indigo-700" onClick={async()=>{await endSession();setRuns([]);setUser(null);}}>Sign out</button></div>
 
       <DataSourceBanner
         activeRun={activeRun}
@@ -185,9 +184,15 @@ export default function App() {
         isCheckingHealth={isCheckingHealth}
         onRefreshHealth={loadWorkspaceData}
         onOpenApiModal={() => setIsApiModalOpen(true)}
+        userEmail={user.email}
+        onSignOut={async () => {
+          await endSession();
+          setRuns([]);
+          setUser(null);
+        }}
       />
 
-      <main className="flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
+      <main className={`flex-1 w-full ${activeTab === 'overview' ? '' : 'max-w-[1440px] mx-auto px-4 sm:px-6 py-6 sm:py-8'}`}>
         {activeTab === 'overview' && (
           <OverviewView
             run={activeRun}
@@ -240,8 +245,8 @@ export default function App() {
         )}
       </main>
 
-      <footer className="border-t border-slate-200/90 bg-white px-4 sm:px-6 py-4 mt-12">
-        <div className="max-w-[1440px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
+      <footer className="border-t border-slate-800/60 bg-[#0B0F19]/80 px-4 sm:px-6 py-5 mt-16 text-slate-400">
+        <div className="max-w-[1440px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs">
           <div>
             TraceMind — Event-Log Anomaly Detection (Isolation Forest), PSO Action Optimization &amp; Intelligent Agent Decision Support
           </div>
@@ -249,7 +254,7 @@ export default function App() {
             <button
               type="button"
               onClick={() => setIsApiModalOpen(true)}
-              className="hover:text-slate-800 underline underline-offset-2 cursor-pointer font-medium"
+              className="hover:text-cyan-400 underline underline-offset-2 cursor-pointer font-medium text-slate-300 transition-colors"
             >
               API Contracts &amp; Backend Integration Status
             </button>

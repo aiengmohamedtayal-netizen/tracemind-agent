@@ -3,6 +3,7 @@ import { motion, useReducedMotion } from 'motion/react';
 import { Activity, ArrowUpRight, ArrowUpRight as ArrowGo, Database, Fingerprint, Radar, RefreshCw, ScanSearch, ShieldCheck, UploadCloud, Waves } from 'lucide-react';
 import { AnalysisRun, EvaluatedEventRecord } from '../types/tracemind';
 import { NavTabId } from './Header';
+import { LandingPageSection } from './LandingPageSection';
 
 interface OverviewViewProps {
   run: AnalysisRun | null;
@@ -19,25 +20,16 @@ export const OverviewView: React.FC<OverviewViewProps> = ({run,isLoading,backend
   const enter = reduceMotion ? {} : { initial:{opacity:0,y:16}, animate:{opacity:1,y:0}, transition:{duration:.55,ease:[.22,1,.36,1] as const} };
   if (isLoading && !run) return <div className="min-h-[55vh] animate-pulse rounded-3xl bg-slate-900" aria-busy="true" aria-label="Loading analysis overview" />;
 
-  if (!run) return <section className="tm-overview-shell overflow-hidden rounded-[2rem]" aria-labelledby="overview-title">
-    <div className="tm-overview-grid relative min-h-[72vh] px-6 py-10 sm:px-10 lg:px-16 lg:py-14">
-      <motion.div {...enter} className="relative z-10 flex min-h-[64vh] flex-col justify-between">
-        <div className="flex items-center gap-3 text-xs font-medium text-slate-400"><span className={`h-2 w-2 rounded-full ${backendReachable?'bg-emerald-400 shadow-[0_0_14px_#34d399]':'bg-rose-400'}`} />{backendReachable?'Local analysis engine connected':'Backend unavailable'}<span className="text-slate-600">/</span>SQLite · Isolation Forest · BPSO</div>
-        <div className="max-w-3xl py-14">
-          <div className="mb-6 flex items-center gap-3 text-emerald-300"><Radar className="h-5 w-5" /><span className="text-sm">TraceMind / Event intelligence</span></div>
-          <h1 id="overview-title" className="max-w-3xl text-5xl font-semibold leading-[1.02] tracking-[-.055em] text-white sm:text-6xl lg:text-7xl">See what your<br/><span className="text-emerald-300">systems reveal.</span></h1>
-          <p className="mt-6 max-w-xl text-base leading-7 text-slate-400">Analyze event logs, detect unusual behavior, and follow a clear investigation path grounded in evidence.</p>
-          <div className="mt-8 flex flex-wrap items-center gap-3">
-            <button type="button" onClick={()=>onNavigate('analyze')} className="tm-overview-cta"><UploadCloud className="h-4 w-4"/>Analyze a log<ArrowGo className="h-4 w-4"/></button>
-            <button type="button" onClick={onRetry} className="rounded-full border border-white/15 px-5 py-3 text-sm text-slate-300 transition-colors hover:border-white/35 hover:text-white"><RefreshCw className="mr-2 inline h-4 w-4"/>Check connection</button>
-          </div>
-          {loadError&&<p role="alert" className="mt-4 text-sm text-rose-300">{loadError}</p>}
-        </div>
-        <div className="flex flex-wrap items-center justify-between gap-4 border-t border-white/10 pt-5 text-xs text-slate-500"><span>Results appear only after a live analysis from the server</span><span className="inline-flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-emerald-400"/>Read-only investigation guidance</span></div>
-      </motion.div>
-      <SignalOrb reduceMotion={Boolean(reduceMotion)} />
-    </div>
-  </section>;
+  if (!run) {
+    return (
+      <LandingPageSection
+        onNavigate={onNavigate}
+        backendReachable={backendReachable}
+        loadError={loadError}
+        onRetry={onRetry}
+      />
+    );
+  }
 
   const anomalies=run.events.filter(e=>e.is_anomaly).sort((a,b)=>b.anomaly_score-a.anomaly_score);
   const action=run.pso_optimization.selected_action;
@@ -45,44 +37,105 @@ export const OverviewView: React.FC<OverviewViewProps> = ({run,isLoading,backend
   const peak=Math.max(1,...distribution.map(b=>b.normal_count+b.anomaly_count));
   const affected=run.agent_recommendation.affected_services;
   const driver=anomalies[0]?.primary_driver??'No anomalous events';
-  return <section className="tm-overview-shell overflow-hidden rounded-[2rem]" aria-labelledby="overview-title">
-    <div className="tm-overview-grid relative px-5 py-7 sm:px-8 sm:py-9 lg:px-12 lg:py-11">
-      <motion.div {...enter} className="relative z-10">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-3 text-xs text-slate-400"><span className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/[.04]"><Fingerprint className="h-4 w-4 text-emerald-300"/></span><span><span className="block text-slate-200">Analysis session</span><span className="mt-1 block font-mono text-[10px] text-slate-500">{run.run_id.slice(0,22)} · {new Date(run.created_at).toLocaleString()}</span></span></div>
-          <button type="button" onClick={()=>onNavigate('analyze')} className="tm-overview-cta !py-2.5"><UploadCloud className="h-4 w-4"/>New analysis</button>
+  return (
+    <div className="space-y-12">
+      <section className="tm-overview-shell overflow-hidden rounded-[2rem]" aria-labelledby="overview-title">
+        <div className="tm-overview-grid relative px-5 py-7 sm:px-8 sm:py-9 lg:px-12 lg:py-11">
+          <motion.div {...enter} className="relative z-10">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-center gap-3 text-xs text-slate-400">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/[.04]">
+                  <Fingerprint className="h-4 w-4 text-emerald-300" />
+                </span>
+                <span>
+                  <span className="block text-slate-200">Analysis session</span>
+                  <span className="mt-1 block font-mono text-[10px] text-slate-500">
+                    {run.run_id.slice(0, 22)} · {new Date(run.created_at).toLocaleString()}
+                  </span>
+                </span>
+              </div>
+              <button type="button" onClick={() => onNavigate('analyze')} className="tm-overview-cta !py-2.5">
+                <UploadCloud className="h-4 w-4" />New analysis
+              </button>
+            </div>
+            <div className="mt-10 grid items-end gap-9 xl:grid-cols-[1.1fr_.9fr]">
+              <div>
+                <p className="flex items-center gap-2 text-xs text-emerald-300">
+                  <Activity className="h-4 w-4" />Signal summary / {run.file_format}
+                </p>
+                <h1 id="overview-title" className="mt-4 max-w-3xl break-words text-4xl font-semibold leading-[1.05] tracking-[-.05em] text-white sm:text-5xl">
+                  {run.dataset_name}
+                </h1>
+                <p className="mt-4 max-w-xl text-sm leading-6 text-slate-400">
+                  {run.agent_recommendation.summary_headline}
+                </p>
+              </div>
+              <ScoreChart distribution={distribution} peak={peak} reduceMotion={Boolean(reduceMotion)} />
+            </div>
+            <div className="mt-9 grid grid-cols-2 border-y border-white/10 lg:grid-cols-4">
+              <Metric label="Events analyzed" value={run.isolation_forest.total_events} note="Validated event records" icon={<Waves />} />
+              <Metric label="Anomalous signals" value={run.isolation_forest.anomalous_events_count} note={`${run.isolation_forest.anomaly_rate_pct}% of this run`} icon={<ScanSearch />} alert={anomalies.length > 0} />
+              <Metric label="Affected services" value={affected.length} note={affected.slice(0, 2).join(', ') || 'No specific service'} icon={<Database />} />
+              <Metric label="Analysis duration" value={`${run.duration_ms}ms`} note="Request received to result saved" icon={<Activity />} />
+            </div>
+            <div className="grid gap-8 py-8 lg:grid-cols-[1fr_.8fr]">
+              <section aria-labelledby="next-step-title">
+                <p className="text-xs text-slate-500">Recommendation linked to the PSO decision</p>
+                <h2 id="next-step-title" className="mt-3 max-w-xl text-2xl font-medium tracking-tight text-white">{action.title}</h2>
+                <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400">{run.agent_recommendation.why_action_selected}</p>
+                <div className="mt-5 flex flex-wrap gap-x-7 gap-y-3 text-xs">
+                  <span><span className="text-slate-500">Statistical driver</span><strong className="ml-2 font-mono text-emerald-300">{driver}</strong></span>
+                  <span><span className="text-slate-500">Action scope</span><strong className="ml-2 text-slate-200">Read-only</strong></span>
+                  <span><span className="text-slate-500">Evidence coverage</span><strong className="ml-2 text-slate-200">{run.agent_recommendation.evidence_coverage_pct ?? run.agent_recommendation.confidence_score_pct}%</strong></span>
+                </div>
+                <button type="button" onClick={() => onNavigate('investigate')} className="mt-6 inline-flex items-center gap-2 text-sm font-medium text-emerald-300 transition-colors hover:text-emerald-200">
+                  Open investigation workspace<ArrowUpRight className="h-4 w-4" />
+                </button>
+              </section>
+              <section aria-labelledby="priority-events-title" className="border-t border-white/10 pt-5 lg:border-l lg:border-t-0 lg:pl-7 lg:pt-0">
+                <div className="flex items-center justify-between">
+                  <h2 id="priority-events-title" className="text-sm font-medium text-slate-200">Highest-priority events</h2>
+                  <span className="font-mono text-xs text-slate-500">TOP 03</span>
+                </div>
+                {anomalies.length === 0 ? (
+                  <p className="mt-5 text-sm text-slate-400">The model did not classify any events as unusual in this run.</p>
+                ) : (
+                  <ul className="mt-3 divide-y divide-white/[.07]">
+                    {anomalies.slice(0, 3).map((event, index) => (
+                      <li key={event.event_id}>
+                        <button type="button" onClick={() => onInspectEvent(event)} className="group flex w-full items-center gap-3 py-3 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-300">
+                          <span className="font-mono text-[10px] text-slate-600">0{index + 1}</span>
+                          <span className="min-w-0 flex-1">
+                            <strong className="block truncate font-mono text-xs text-slate-200">
+                              {event.event_id}<span className="ml-2 font-sans font-normal text-slate-500">{event.service}</span>
+                            </strong>
+                            <span className="mt-1 block text-[10px] text-slate-500">{event.primary_driver}</span>
+                          </span>
+                          <span className="font-mono text-xs text-rose-300">{event.anomaly_score.toFixed(3)}</span>
+                          <ArrowUpRight className="h-3.5 w-3.5 text-slate-600 transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-emerald-300" />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+            </div>
+            <div className="flex items-center justify-between border-t border-white/10 pt-4 text-[10px] text-slate-600">
+              <span>TraceMind / Evidence-led investigation support</span>
+              <span className="font-mono">{run.pso_optimization.algorithm} · {run.agent_recommendation.agent_version}</span>
+            </div>
+          </motion.div>
         </div>
-        <div className="mt-10 grid items-end gap-9 xl:grid-cols-[1.1fr_.9fr]">
-          <div>
-            <p className="flex items-center gap-2 text-xs text-emerald-300"><Activity className="h-4 w-4"/>Signal summary / {run.file_format}</p>
-            <h1 id="overview-title" className="mt-4 max-w-3xl break-words text-4xl font-semibold leading-[1.05] tracking-[-.05em] text-white sm:text-5xl">{run.dataset_name}</h1>
-            <p className="mt-4 max-w-xl text-sm leading-6 text-slate-400">{run.agent_recommendation.summary_headline}</p>
-          </div>
-          <ScoreChart distribution={distribution} peak={peak} reduceMotion={Boolean(reduceMotion)} />
-        </div>
-        <div className="mt-9 grid grid-cols-2 border-y border-white/10 lg:grid-cols-4">
-          <Metric label="Events analyzed" value={run.isolation_forest.total_events} note="Validated event records" icon={<Waves/>}/>
-          <Metric label="Anomalous signals" value={run.isolation_forest.anomalous_events_count} note={`${run.isolation_forest.anomaly_rate_pct}% of this run`} icon={<ScanSearch/>} alert={anomalies.length>0}/>
-          <Metric label="Affected services" value={affected.length} note={affected.slice(0,2).join(', ')||'No specific service'} icon={<Database/>}/>
-          <Metric label="Analysis duration" value={`${run.duration_ms}ms`} note="Request received to result saved" icon={<Activity/>}/>
-        </div>
-        <div className="grid gap-8 py-8 lg:grid-cols-[1fr_.8fr]">
-          <section aria-labelledby="next-step-title">
-            <p className="text-xs text-slate-500">Recommendation linked to the PSO decision</p>
-            <h2 id="next-step-title" className="mt-3 max-w-xl text-2xl font-medium tracking-tight text-white">{action.title}</h2>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400">{run.agent_recommendation.why_action_selected}</p>
-            <div className="mt-5 flex flex-wrap gap-x-7 gap-y-3 text-xs"><span><span className="text-slate-500">Statistical driver</span><strong className="ml-2 font-mono text-emerald-300">{driver}</strong></span><span><span className="text-slate-500">Action scope</span><strong className="ml-2 text-slate-200">Read-only</strong></span><span><span className="text-slate-500">Evidence coverage</span><strong className="ml-2 text-slate-200">{run.agent_recommendation.evidence_coverage_pct??run.agent_recommendation.confidence_score_pct}%</strong></span></div>
-            <button type="button" onClick={()=>onNavigate('investigate')} className="mt-6 inline-flex items-center gap-2 text-sm font-medium text-emerald-300 transition-colors hover:text-emerald-200">Open investigation workspace<ArrowUpRight className="h-4 w-4"/></button>
-          </section>
-          <section aria-labelledby="priority-events-title" className="border-t border-white/10 pt-5 lg:border-l lg:border-t-0 lg:pl-7 lg:pt-0">
-            <div className="flex items-center justify-between"><h2 id="priority-events-title" className="text-sm font-medium text-slate-200">Highest-priority events</h2><span className="font-mono text-xs text-slate-500">TOP 03</span></div>
-            {anomalies.length===0?<p className="mt-5 text-sm text-slate-400">The model did not classify any events as unusual in this run.</p>:<ul className="mt-3 divide-y divide-white/[.07]">{anomalies.slice(0,3).map((event,index)=><li key={event.event_id}><button type="button" onClick={()=>onInspectEvent(event)} className="group flex w-full items-center gap-3 py-3 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-300"><span className="font-mono text-[10px] text-slate-600">0{index+1}</span><span className="min-w-0 flex-1"><strong className="block truncate font-mono text-xs text-slate-200">{event.event_id}<span className="ml-2 font-sans font-normal text-slate-500">{event.service}</span></strong><span className="mt-1 block text-[10px] text-slate-500">{event.primary_driver}</span></span><span className="font-mono text-xs text-rose-300">{event.anomaly_score.toFixed(3)}</span><ArrowUpRight className="h-3.5 w-3.5 text-slate-600 transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-emerald-300"/></button></li>)}</ul>}
-          </section>
-        </div>
-        <div className="flex items-center justify-between border-t border-white/10 pt-4 text-[10px] text-slate-600"><span>TraceMind / Evidence-led investigation support</span><span className="font-mono">{run.pso_optimization.algorithm} · {run.agent_recommendation.agent_version}</span></div>
-      </motion.div>
+      </section>
+
+      <LandingPageSection
+        onNavigate={onNavigate}
+        backendReachable={backendReachable}
+        loadError={loadError}
+        onRetry={onRetry}
+      />
     </div>
-  </section>;
+  );
 };
 
 function SignalOrb({reduceMotion}:{reduceMotion:boolean}) { return <div aria-hidden="true" className="pointer-events-none absolute right-[-4rem] top-1/2 hidden h-[34rem] w-[34rem] -translate-y-1/2 items-center justify-center lg:flex"><div className="tm-orbit tm-orbit-one"/><div className="tm-orbit tm-orbit-two"/><div className="tm-orbit tm-orbit-three"/><motion.div className="tm-orb-core" animate={reduceMotion?undefined:{scale:[1,1.05,1],opacity:[.72,1,.72]}} transition={{duration:5,repeat:Infinity,ease:'easeInOut'}}/><span className="absolute right-[18%] top-[25%] h-2 w-2 rounded-full bg-emerald-300 shadow-[0_0_22px_5px_#10b98188]"/><span className="absolute bottom-[25%] left-[22%] h-1.5 w-1.5 rounded-full bg-cyan-200 shadow-[0_0_18px_4px_#67e8f988]"/></div>; }

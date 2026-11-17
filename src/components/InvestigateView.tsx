@@ -31,23 +31,36 @@ export const InvestigateView: React.FC<InvestigateViewProps> = (props) => {
 
   return (
     <section className="space-y-6" aria-labelledby="investigate-title">
-      <div className="border-b border-slate-200 pb-5">
-        <p className="text-xs font-semibold text-blue-700">Investigation workspace</p>
-        <h1 id="investigate-title" className="mt-1 text-2xl font-bold tracking-tight text-slate-900">Inspect the evidence behind this analysis</h1>
-        <p className="mt-1 max-w-3xl text-sm leading-relaxed text-slate-600">Start with event-level records, then open the recommendation and technical model evidence when needed.</p>
+      <div className="border-b border-slate-800/80 pb-5">
+        <p className="text-xs font-semibold text-cyan-400 font-mono tracking-wide uppercase">Investigation workspace</p>
+        <h1 id="investigate-title" className="mt-1 text-2xl font-bold tracking-tight text-white">Inspect the evidence behind this analysis</h1>
+        <p className="mt-1 max-w-3xl text-sm leading-relaxed text-slate-400">Start with event-level records, then open the recommendation and technical model evidence when needed.</p>
       </div>
-      <div role="tablist" aria-label="Investigation sections" className="flex flex-wrap gap-2 border-b border-slate-200 pb-3">
+      <div role="tablist" aria-label="Investigation sections" className="flex flex-wrap gap-2 border-b border-slate-800/80 pb-3">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const selected = section === tab.id;
           return (
-            <button key={tab.id} id={`${tabId}-${tab.id}`} role="tab" type="button" aria-selected={selected} aria-controls={`${tabId}-panel`} onClick={() => setSection(tab.id)} className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-blue-600 ${selected ? 'bg-slate-900 text-white' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'}`}>
+            <button
+              key={tab.id}
+              id={`${tabId}-${tab.id}`}
+              role="tab"
+              type="button"
+              aria-selected={selected}
+              aria-controls={`${tabId}-panel`}
+              onClick={() => setSection(tab.id)}
+              className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-all ${
+                selected
+                  ? 'bg-cyan-500/15 border border-cyan-500/40 text-cyan-300 shadow-sm shadow-cyan-500/10'
+                  : 'bg-slate-900/60 border border-slate-800 text-slate-300 hover:bg-slate-800 hover:text-white'
+              }`}
+            >
               <Icon className="w-4 h-4" aria-hidden="true" /> {tab.label}
             </button>
           );
         })}
       </div>
-      <p className="text-xs text-slate-500">{tabs.find((tab) => tab.id === section)?.description}</p>
+      <p className="text-xs text-slate-400">{tabs.find((tab) => tab.id === section)?.description}</p>
       <div id={`${tabId}-panel`} role="tabpanel" aria-labelledby={`${tabId}-${section}`}>
         {section === 'events' && <AnomaliesTableView {...props} />}
         {section === 'recommendation' && <PsoAgentView {...props} />}

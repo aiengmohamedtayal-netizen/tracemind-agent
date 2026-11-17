@@ -1,5 +1,5 @@
 import React from 'react';
-import { RefreshCw, SlidersHorizontal, Database } from 'lucide-react';
+import { RefreshCw, SlidersHorizontal, Database, User, LogOut } from 'lucide-react';
 import { AnalysisRun } from '../types/tracemind';
 import { BackendHealthStatus } from '../services/api';
 import { API_CONFIG } from '../config/api';
@@ -12,6 +12,8 @@ interface DataSourceBannerProps {
   isCheckingHealth: boolean;
   onRefreshHealth: () => void;
   onOpenApiModal: () => void;
+  userEmail?: string;
+  onSignOut?: () => void;
 }
 
 export const DataSourceBanner: React.FC<DataSourceBannerProps> = ({
@@ -22,6 +24,8 @@ export const DataSourceBanner: React.FC<DataSourceBannerProps> = ({
   isCheckingHealth,
   onRefreshHealth,
   onOpenApiModal,
+  userEmail,
+  onSignOut,
 }) => {
   const connectionState = isCheckingHealth
     ? 'checking'
@@ -34,16 +38,16 @@ export const DataSourceBanner: React.FC<DataSourceBannerProps> = ({
   return (
     <section
       aria-label="Active Analysis Run and Backend Status"
-      className="bg-slate-100/85 border-b border-slate-200/90 px-4 sm:px-6 py-2.5"
+      className="bg-[#0B0F19]/90 border-b border-slate-800/60 px-4 sm:px-6 py-2.5 text-slate-300 shadow-sm"
     >
-      <div className="max-w-[1440px] mx-auto flex flex-wrap items-center justify-between gap-x-6 gap-y-2.5 text-xs text-slate-600">
+      <div className="max-w-[1440px] mx-auto flex flex-wrap items-center justify-between gap-x-6 gap-y-2.5 text-xs">
         {/* Left: Active Run Selector & Telemetry Metadata */}
         <div className="flex flex-wrap items-center gap-2.5 min-w-0 max-w-full">
           <label
             htmlFor="active-run-select"
-            className="inline-flex items-center gap-1.5 font-semibold text-slate-700 shrink-0"
+            className="inline-flex items-center gap-1.5 font-semibold text-slate-300 shrink-0"
           >
-            <Database className="w-3.5 h-3.5 text-slate-500" aria-hidden="true" />
+            <Database className="w-3.5 h-3.5 text-cyan-400" aria-hidden="true" />
             Active Run:
           </label>
           <select
@@ -51,7 +55,7 @@ export const DataSourceBanner: React.FC<DataSourceBannerProps> = ({
             value={activeRun?.run_id || ''}
             disabled={allRuns.length === 0}
             onChange={(e) => onSelectRun(e.target.value)}
-            className="tm-input max-w-[calc(100vw-6.5rem)] sm:max-w-md truncate px-2.5 py-1 text-xs font-medium text-slate-900 font-mono cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed shadow-2xs"
+            className="bg-slate-900 border border-slate-700/80 hover:border-cyan-500/50 rounded-lg max-w-[calc(100vw-6.5rem)] sm:max-w-md truncate px-2.5 py-1 text-xs font-medium text-slate-200 font-mono cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed transition-colors focus:border-cyan-400 focus:outline-none"
           >
             {allRuns.length === 0 ? (
               <option value="">No backend analysis runs loaded</option>
@@ -66,46 +70,47 @@ export const DataSourceBanner: React.FC<DataSourceBannerProps> = ({
           </select>
 
           {activeRun && (
-            <div className="flex items-center gap-2 text-slate-500 pl-0.5">
+            <div className="flex items-center gap-2 text-slate-400 pl-0.5">
               <span>
                 Format:{' '}
-                <strong className="font-mono font-medium text-slate-700">
+                <strong className="font-mono font-medium text-cyan-400">
                   {activeRun.file_format}
                 </strong>
               </span>
               <span aria-hidden="true">·</span>
-              <span className="font-mono tabular-nums">
+              <span className="font-mono tabular-nums text-slate-300">
                 Processed in {activeRun.duration_ms} ms
               </span>
             </div>
           )}
         </div>
 
-        {/* Right: Real Backend Connection Status & Controls */}
+        {/* Right: Real Backend Connection Status, Controls, and User Strip */}
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-1.5 text-xs" data-testid="backend-connection-status">
-            <span className="font-semibold text-slate-700">Backend Status:</span>
+            <span className="font-semibold text-slate-400">Backend Status:</span>
             {connectionState === 'checking' ? (
-              <span className="text-blue-700 font-semibold">
-                Checking Connection ({API_CONFIG.baseUrl})...
+              <span className="text-cyan-400 font-semibold inline-flex items-center gap-1">
+                <RefreshCw className="w-3 h-3 animate-spin" /> Checking ({API_CONFIG.baseUrl})...
               </span>
             ) : connectionState === 'connected' ? (
-              <span className="text-emerald-800 font-semibold">
+              <span className="text-emerald-400 font-semibold inline-flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399] animate-pulse" />
                 Connected ({healthStatus?.endpointUrl}
                 {healthStatus?.latencyMs !== null ? ` · ${healthStatus?.latencyMs} ms` : ''})
               </span>
             ) : connectionState === 'config_missing' ? (
-              <span className="text-red-700 font-semibold">
+              <span className="text-rose-400 font-semibold">
                 Configuration Missing (Set VITE_API_BASE_URL)
               </span>
             ) : (
-              <span className="text-red-700 font-semibold">
+              <span className="text-rose-400 font-semibold">
                 Backend Unavailable ({API_CONFIG.baseUrl}/health unreachable)
               </span>
             )}
           </div>
 
-          <span aria-hidden="true" className="text-slate-300 hidden sm:inline">
+          <span aria-hidden="true" className="text-slate-700 hidden sm:inline">
             |
           </span>
 
@@ -114,11 +119,11 @@ export const DataSourceBanner: React.FC<DataSourceBannerProps> = ({
               type="button"
               onClick={onRefreshHealth}
               disabled={isCheckingHealth}
-              className="inline-flex items-center gap-1 text-slate-700 hover:text-blue-600 font-medium transition-colors disabled:opacity-50 cursor-pointer whitespace-nowrap shrink-0 py-1 px-1.5 rounded hover:bg-slate-200/60"
+              className="inline-flex items-center gap-1 text-slate-300 hover:text-cyan-300 font-medium transition-colors disabled:opacity-50 cursor-pointer whitespace-nowrap shrink-0 py-1 px-2 rounded-lg border border-slate-800 bg-slate-900/60 hover:bg-slate-800/80 text-xs"
             >
               <RefreshCw
                 className={`w-3 h-3 ${
-                  isCheckingHealth ? 'animate-spin text-blue-600' : 'text-slate-500'
+                  isCheckingHealth ? 'animate-spin text-cyan-400' : 'text-slate-400'
                 }`}
                 aria-hidden="true"
               />
@@ -128,12 +133,36 @@ export const DataSourceBanner: React.FC<DataSourceBannerProps> = ({
             <button
               type="button"
               onClick={onOpenApiModal}
-              className="tm-btn-secondary px-2.5 py-1 text-xs whitespace-nowrap shrink-0"
+              className="inline-flex items-center gap-1.5 text-slate-200 hover:text-white bg-slate-900 hover:border-cyan-500/50 border border-slate-700/80 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer"
             >
-              <SlidersHorizontal className="w-3 h-3 text-slate-500" aria-hidden="true" />
+              <SlidersHorizontal className="w-3 h-3 text-cyan-400" aria-hidden="true" />
               API Contracts
             </button>
           </div>
+
+          {userEmail && (
+            <>
+              <span aria-hidden="true" className="text-slate-700 hidden sm:inline">
+                |
+              </span>
+              <div className="flex items-center gap-2.5 pl-1 text-xs">
+                <span className="inline-flex items-center gap-1 text-slate-300 font-mono">
+                  <User className="w-3 h-3 text-slate-500" />
+                  {userEmail}
+                </span>
+                {onSignOut && (
+                  <button
+                    type="button"
+                    onClick={onSignOut}
+                    className="inline-flex items-center gap-1 text-rose-400 hover:text-rose-300 hover:underline transition-colors font-sans cursor-pointer"
+                  >
+                    <LogOut className="w-3 h-3" />
+                    Sign out
+                  </button>
+                )}
+              </div>
+            </>
+          )}
         </div>
       </div>
     </section>

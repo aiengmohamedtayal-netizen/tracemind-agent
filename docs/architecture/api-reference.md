@@ -2,7 +2,7 @@
 
 Base path: `/api`. The React client normally uses a same-origin `/api` URL; Vite proxies it to the FastAPI process during development.
 
-The API has no authentication or authorization layer in the current implementation. Responses are JSON unless explicitly noted. Unexpected server failures return `{ "detail": "An unexpected server error occurred.", "request_id": "..." }` with HTTP 500.
+All analysis and history routes require a Bearer JWT access token obtained from `/api/auth/register` or `/api/auth/login` (refresh tokens are rotated via an `HttpOnly`, `SameSite=Strict` cookie scoped to `/api/auth`). CORS allows `Accept`, `Content-Type`, `Authorization`, and `X-Request-ID`, and permits `GET`, `POST`, and `DELETE` (any future `PUT`/`PATCH` endpoint must update `allow_methods` in `backend/app/main.py`). Responses are JSON unless explicitly noted. Unexpected server failures return `{ "detail": "An unexpected server error occurred.", "request_id": "..." }` with HTTP 500.
 
 ## `GET /api/health`
 
@@ -74,7 +74,7 @@ Runs the complete ingestion, detection, optimization, agent, and persistence wor
 
 The exact response model is represented in the frontend by `AnalysisRun`, `IsolationForestSummary`, `PSOOptimizationResult`, `AgentRecommendation`, and `EvaluatedEventRecord` in `src/types/tracemind.ts`.
 
-The agent decision trace is additive and persisted inside `agent_recommendation`. `confidence_score_pct` remains for existing clients but represents deterministic evidence coverage in agent version 2; it is not a probability, threat score, or certainty claim. If required evidence is missing or internally inconsistent, the response remains successful for the completed analysis but the agent returns a `no_recommendation` selected intention and empty execution steps.
+The agent decision trace is additive and persisted inside `agent_recommendation`. `evidence_coverage_pct` is the primary field measuring deterministic upstream evidence completeness (`confidence_score_pct` is retained as a backward-compatible alias and is not a probability, threat score, or certainty claim). Within `isolation_forest`, `threshold_score` is `null` when zero anomalies are detected, `feature_importances` is a mean absolute standardized deviation heuristic (not tree importance or SHAP), and `critical` (`>= 0.80`) / `high` (`>= 0.60`) severity bands are uncalibrated display thresholds. Within `pso_optimization`, `converged_at_iteration` is `null` when the initial swarm best was never improved, and `baseline_cost_usd` / `estimated_savings_pct` compare the selected action against the all-actions baseline (sum of all candidate action costs). If required evidence is missing or internally inconsistent, the response remains successful for the completed analysis but the agent returns a `no_recommendation` selected intention and empty execution steps.
 
 ### Errors
 
@@ -86,13 +86,11 @@ The agent decision trace is additive and persisted inside `agent_recommendation`
 
 ## `GET /api/history`
 
-Returns saved completed reports, newest creation timestamp first.
+Returns saved completed reports owned by the authenticated user, newest creation timestamp first, with offset pagination (`?limit=20&offset=0`, `limit` between `1` and `100`, `offset >= 0`).
 
 ```json
-{ "runs": [/* AnalysisRun */] }
+{ "runs": [/* AnalysisRun */], "limit": 20, "offset": 0 }
 ```
-
-No pagination, filtering, or summary-only response mode is implemented.
 
 ## `GET /api/history/{run_id}`
 

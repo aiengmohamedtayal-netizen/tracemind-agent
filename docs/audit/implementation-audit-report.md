@@ -58,7 +58,7 @@ The Isolation Forest and PSO implementations are genuine implementations rather 
 
 It standardizes that matrix with `StandardScaler`. For non-constant data it instantiates scikit-learn `IsolationForest` with the caller-provided `n_estimators`, `contamination`, and deterministic `random_state`; `n_jobs=1` is explicit. It calls `fit`, then `predict`. A `-1` prediction is the only source of `is_anomaly`.
 
-`anomaly_score` is a **per-run min/max normalization** of `-decision_function`; it is not a calibrated probability and is not the classification threshold. `threshold_score` is the minimum normalized score among records already predicted anomalous, or `1.0` where there are none. It is an output summary value, not an input to model classification.
+`anomaly_score` is a **per-run min/max normalization** of `-decision_function`; it is not a calibrated probability and is not the classification threshold. `threshold_score` is the minimum normalized score among records already predicted anomalous, or `null` where there are none (updated from `1.0` during audit hardening). It is an output summary value, not an input to model classification.
 
 For every event, the implementation also computes standardized absolute z-score contributions, chooses the largest as `primary_driver`, derives a display severity, computes score buckets, and compares anomalous versus normal feature means.
 

@@ -53,7 +53,7 @@ export interface IsolationForestSummary {
   n_estimators: number;
   contamination: number;
   sample_size: number;
-  threshold_score: number;
+  threshold_score: number | null;
   total_events: number;
   anomalous_events_count: number;
   normal_events_count: number;
@@ -104,7 +104,7 @@ export interface PSOOptimizationResult {
   inertia_weight: number;
   cognitive_coeff: number;
   social_coeff: number;
-  converged_at_iteration: number;
+  converged_at_iteration: number | null;
   best_fitness_score: number;
   baseline_cost_usd: number;
   optimized_cost_usd: number;

@@ -1,7 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  Activity,
-  ArrowUpRight,
   Atom,
   BellRing,
   Bot,
@@ -13,10 +11,8 @@ import {
   DatabaseZap,
   FileCode2,
   Gauge,
-  History as HistoryIcon,
   ListChecks,
   Lock,
-  MemoryStick,
   Network,
   Radar,
   RefreshCw,

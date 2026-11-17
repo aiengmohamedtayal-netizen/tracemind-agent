@@ -1,10 +1,13 @@
-import React, { useId, useState } from 'react';
+import React, { lazy, Suspense, useId, useState } from 'react';
 import { BarChart3, BrainCircuit, ListFilter } from 'lucide-react';
 import { AnalysisRun, EvaluatedEventRecord } from '../types/tracemind';
 import { NavTabId } from './Header';
 import { AnomaliesTableView } from './AnomaliesTableView';
-import { DashboardView } from './DashboardView';
 import { PsoAgentView } from './PsoAgentView';
+
+const DashboardView = lazy(() =>
+  import('./DashboardView').then((m) => ({ default: m.DashboardView }))
+);
 
 type InvestigationSection = 'events' | 'recommendation' | 'evidence';
 
@@ -64,7 +67,11 @@ export const InvestigateView: React.FC<InvestigateViewProps> = (props) => {
       <div id={`${tabId}-panel`} role="tabpanel" aria-labelledby={`${tabId}-${section}`}>
         {section === 'events' && <AnomaliesTableView {...props} />}
         {section === 'recommendation' && <PsoAgentView {...props} />}
-        {section === 'evidence' && <DashboardView {...props} />}
+        {section === 'evidence' && (
+          <Suspense fallback={<div className="min-h-[40vh] animate-pulse rounded-2xl bg-slate-900/60" aria-busy="true" aria-label="Loading model evidence" />}>
+            <DashboardView {...props} />
+          </Suspense>
+        )}
       </div>
     </section>
   );

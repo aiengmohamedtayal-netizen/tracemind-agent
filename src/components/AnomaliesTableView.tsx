@@ -105,9 +105,9 @@ export const AnomaliesTableView: React.FC<AnomaliesTableViewProps> = ({
             {run ? (
               <>
                 <span className="font-mono">
-                  Threshold &ge;{' '}
+                  Threshold{' '}
                   <strong className="text-slate-700">
-                    {run.isolation_forest.threshold_score}
+                    {run.isolation_forest.threshold_score != null ? `≥ ${run.isolation_forest.threshold_score}` : 'N/A'}
                   </strong>
                 </span>
                 <span aria-hidden="true">·</span>
@@ -545,7 +545,9 @@ export const AnomaliesTableView: React.FC<AnomaliesTableViewProps> = ({
                       {activeEvent.anomaly_score.toFixed(4)}
                     </div>
                     <div className="text-[11px] text-slate-400 font-mono mt-0.5">
-                      Cutoff &ge; {run.isolation_forest.threshold_score}
+                      {run.isolation_forest.threshold_score != null
+                        ? `Cutoff ≥ ${run.isolation_forest.threshold_score}`
+                        : 'No anomaly cutoff'}
                     </div>
                   </div>
                   <div>

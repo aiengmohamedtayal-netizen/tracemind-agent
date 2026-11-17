@@ -63,6 +63,10 @@ export const HistoryReportsView: React.FC<HistoryReportsViewProps> = ({
   };
 
   const handleDeleteClick = async (runId: string) => {
+    const confirmed = window.confirm(
+      `Delete this analysis run?\n\nRun ID: ${runId}\n\nThis action cannot be undone.`
+    );
+    if (!confirmed) return;
     setDeleteError(null);
     setDeletingRunId(runId);
     try {

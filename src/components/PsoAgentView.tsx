@@ -138,7 +138,12 @@ export const PsoAgentView: React.FC<PsoAgentViewProps> = ({
             </span>
             <span aria-hidden="true">·</span>
             <span>
-              Converged Iteration: <strong className="font-mono text-emerald-700">#{pso.converged_at_iteration}</strong>
+              Converged Iteration:{' '}
+              <strong className="font-mono text-emerald-700">
+                {pso.converged_at_iteration != null && pso.converged_at_iteration > 0
+                  ? `#${pso.converged_at_iteration}`
+                  : 'Initial swarm'}
+              </strong>
             </span>
           </div>
           <h1 className="text-2xl sm:text-[26px] font-bold tracking-tight text-slate-900">
@@ -192,8 +197,11 @@ export const PsoAgentView: React.FC<PsoAgentViewProps> = ({
               </strong>)
             </p>
           </div>
-          <div className="text-xs font-mono text-slate-700 bg-slate-100 px-3 py-1.5 rounded-lg tabular-nums shrink-0">
-            Baseline Cost: ${pso.baseline_cost_usd} &rarr; Optimized:{' '}
+          <div
+            className="text-xs font-mono text-slate-700 bg-slate-100 px-3 py-1.5 rounded-lg tabular-nums shrink-0"
+            title="Baseline equals the combined cost of executing all candidate investigation actions"
+          >
+            All-Actions Baseline: ${pso.baseline_cost_usd} &rarr; Selected:{' '}
             <strong className="text-emerald-700">${pso.optimized_cost_usd} (-{pso.estimated_savings_pct}%)</strong>
           </div>
         </div>

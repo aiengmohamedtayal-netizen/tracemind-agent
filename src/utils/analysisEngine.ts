@@ -91,7 +91,7 @@ export function parseEventLogContent(
     const items = trimmed.split(/\r?\n/).filter((line) => line.trim());
     const parsed = items.map((line, index) => {
       try { return JSON.parse(line) as Record<string, unknown>; }
-      catch (error) { throw new Error(`Invalid JSONL on line ${index + 1}: ${error instanceof Error ? error.message : 'Invalid JSON'}`); }
+      catch (error) { throw new Error(`Invalid JSONL on line ${index + 1}: ${error instanceof Error ? error.message : 'Invalid JSON'}`, { cause: error }); }
     });
     return { records: normalizeRecords(parsed), detectedFormat: 'JSONL' };
   }
@@ -102,7 +102,8 @@ export function parseEventLogContent(
       parsed = JSON.parse(trimmed);
     } catch (err) {
       throw new Error(
-        `Invalid JSON syntax: ${err instanceof Error ? err.message : 'Unable to parse JSON payload'}`
+        `Invalid JSON syntax: ${err instanceof Error ? err.message : 'Unable to parse JSON payload'}`,
+        { cause: err }
       );
     }
 
@@ -358,12 +359,10 @@ export function filterAndSortEvents(
   });
 
   return filtered.sort((a, b) => {
-    let cmp = 0;
-    if (options.sortBy === 'timestamp') {
-      cmp = (a.timestamp ?? '').localeCompare(b.timestamp ?? '');
-    } else {
-      cmp = Number(a[options.sortBy]) - Number(b[options.sortBy]);
-    }
+    const cmp =
+      options.sortBy === 'timestamp'
+        ? (a.timestamp ?? '').localeCompare(b.timestamp ?? '')
+        : Number(a[options.sortBy]) - Number(b[options.sortBy]);
     return options.sortDirection === 'asc' ? cmp : -cmp;
   });
 }

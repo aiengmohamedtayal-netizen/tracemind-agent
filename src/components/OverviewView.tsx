@@ -1,9 +1,12 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
-import { Activity, ArrowUpRight, ArrowUpRight as ArrowGo, Database, Fingerprint, Radar, RefreshCw, ScanSearch, ShieldCheck, UploadCloud, Waves } from 'lucide-react';
+import { Activity, ArrowUpRight, Database, Fingerprint, ScanSearch, UploadCloud, Waves } from 'lucide-react';
 import { AnalysisRun, EvaluatedEventRecord } from '../types/tracemind';
 import { NavTabId } from './Header';
-import { LandingPageSection } from './LandingPageSection';
+
+const LandingPageSection = lazy(() =>
+  import('./LandingPageSection').then((m) => ({ default: m.LandingPageSection }))
+);
 
 interface OverviewViewProps {
   run: AnalysisRun | null;
@@ -22,12 +25,14 @@ export const OverviewView: React.FC<OverviewViewProps> = ({run,isLoading,backend
 
   if (!run) {
     return (
-      <LandingPageSection
-        onNavigate={onNavigate}
-        backendReachable={backendReachable}
-        loadError={loadError}
-        onRetry={onRetry}
-      />
+      <Suspense fallback={<div className="min-h-[55vh] animate-pulse rounded-3xl bg-slate-900" aria-busy="true" aria-label="Loading landing overview" />}>
+        <LandingPageSection
+          onNavigate={onNavigate}
+          backendReachable={backendReachable}
+          loadError={loadError}
+          onRetry={onRetry}
+        />
+      </Suspense>
     );
   }
 
@@ -128,17 +133,18 @@ export const OverviewView: React.FC<OverviewViewProps> = ({run,isLoading,backend
         </div>
       </section>
 
-      <LandingPageSection
-        onNavigate={onNavigate}
-        backendReachable={backendReachable}
-        loadError={loadError}
-        onRetry={onRetry}
-      />
+      <Suspense fallback={<div className="min-h-[30vh] animate-pulse rounded-3xl bg-slate-900" aria-busy="true" aria-label="Loading platform overview" />}>
+        <LandingPageSection
+          onNavigate={onNavigate}
+          backendReachable={backendReachable}
+          loadError={loadError}
+          onRetry={onRetry}
+        />
+      </Suspense>
     </div>
   );
 };
 
-function SignalOrb({reduceMotion}:{reduceMotion:boolean}) { return <div aria-hidden="true" className="pointer-events-none absolute right-[-4rem] top-1/2 hidden h-[34rem] w-[34rem] -translate-y-1/2 items-center justify-center lg:flex"><div className="tm-orbit tm-orbit-one"/><div className="tm-orbit tm-orbit-two"/><div className="tm-orbit tm-orbit-three"/><motion.div className="tm-orb-core" animate={reduceMotion?undefined:{scale:[1,1.05,1],opacity:[.72,1,.72]}} transition={{duration:5,repeat:Infinity,ease:'easeInOut'}}/><span className="absolute right-[18%] top-[25%] h-2 w-2 rounded-full bg-emerald-300 shadow-[0_0_22px_5px_#10b98188]"/><span className="absolute bottom-[25%] left-[22%] h-1.5 w-1.5 rounded-full bg-cyan-200 shadow-[0_0_18px_4px_#67e8f988]"/></div>; }
 
 function ScoreChart({distribution,peak,reduceMotion}:{distribution:AnalysisRun['isolation_forest']['score_distribution'];peak:number;reduceMotion:boolean}) {
   const width=560,height=170,pad=12; const points=distribution.map((bin,i)=>({x:pad+i*(width-pad*2)/Math.max(1,distribution.length-1),y:height-pad-((bin.normal_count+bin.anomaly_count)/peak)*(height-pad*2),anomaly:bin.anomaly_count}));

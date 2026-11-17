@@ -454,7 +454,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <p className="mt-3 pt-2.5 border-t border-slate-100 text-xs text-slate-600">
             Threshold score{' '}
             <span className="font-mono font-semibold text-slate-800">
-              &ge; {iforest.threshold_score}
+              {iforest.threshold_score != null ? `≥ ${iforest.threshold_score}` : 'N/A (no anomalies)'}
             </span>{' '}
             ({iforest.normal_events_count} nominal records)
           </p>
@@ -475,7 +475,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   <span className="text-base font-normal text-slate-400">/100</span>
                 </span>
                 <span className="text-xs text-emerald-700 font-semibold font-mono tabular-nums">
-                  Converged iter #{pso.converged_at_iteration}
+                  {pso.converged_at_iteration != null && pso.converged_at_iteration > 0
+                    ? `Converged iter #${pso.converged_at_iteration}`
+                    : 'Best at init'}
                 </span>
               </div>
             </div>
@@ -509,8 +511,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 >
                   <AnimatedValue value={pso.optimized_cost_usd} prefix="$" />
                 </span>
-                <span className="text-xs text-emerald-700 font-semibold font-mono tabular-nums">
-                  -{pso.estimated_savings_pct}% vs baseline
+                <span
+                  className="text-xs text-emerald-700 font-semibold font-mono tabular-nums"
+                  title="Savings relative to executing all candidate investigation actions without optimization"
+                >
+                  -{pso.estimated_savings_pct}% vs all-actions
                 </span>
               </div>
             </div>
@@ -542,10 +547,17 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   01. Isolation Forest Score Distribution
                 </h2>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Decision score histogram across {iforest.total_events} events (anomaly cutoff &ge;{' '}
-                  <span className="font-mono font-semibold text-slate-700">
-                    {iforest.threshold_score}
-                  </span>
+                  Decision score histogram across {iforest.total_events} events (
+                  {iforest.threshold_score != null ? (
+                    <>
+                      anomaly cutoff &ge;{' '}
+                      <span className="font-mono font-semibold text-slate-700">
+                        {iforest.threshold_score}
+                      </span>
+                    </>
+                  ) : (
+                    'no anomalies detected'
+                  )}
                   )
                 </p>
               </div>
@@ -731,7 +743,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
                 {areaPoints && <polygon points={areaPoints} fill="url(#psoAreaGrad)" />}
 
-                {pso.converged_at_iteration <= history.length && history.length > 0 && (
+                {pso.converged_at_iteration != null && pso.converged_at_iteration >= 1 && pso.converged_at_iteration <= history.length && history.length > 0 && (
                   <g>
                     <line
                       x1={toX(pso.converged_at_iteration - 1)}

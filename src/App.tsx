@@ -24,6 +24,7 @@ import { authenticate, endSession, restoreSession } from './services/api';
 export default function App() {
   const [user,setUser]=useState<AuthUser|null>(null);
   const [sessionReady,setSessionReady]=useState(false);
+  const [sessionError,setSessionError]=useState<string|null>(null);
   const [activeTab, setActiveTab] = useState<NavTabId>('overview');
   const [runs, setRuns] = useState<AnalysisRun[]>([]);
   const [activeRunId, setActiveRunId] = useState<string>('');
@@ -38,7 +39,14 @@ export default function App() {
 
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  useEffect(()=>{ restoreSession().then(setUser).finally(()=>setSessionReady(true)); },[]);
+  useEffect(()=>{
+    restoreSession()
+      .then(({ user: restoredUser, error }) => {
+        setUser(restoredUser);
+        setSessionError(error);
+      })
+      .finally(()=>setSessionReady(true));
+  },[]);
 
   useEffect(()=>{
     const expire=()=>{setRuns([]);setActiveRunId('');setUser(null);};
@@ -48,6 +56,7 @@ export default function App() {
 
   const handleAuthenticate = async (email:string,password:string,mode:'login'|'register') => {
     const authenticated=await authenticate(email,password,mode);
+    setSessionError(null);
     setUser(authenticated as AuthUser);
   };
 
@@ -163,7 +172,7 @@ export default function App() {
   };
 
   if (!sessionReady) return <div className="min-h-screen grid place-items-center bg-[#060913] text-slate-300 font-mono text-sm">Checking your session…</div>;
-  if (!user) return <AuthGate onAuthenticated={handleAuthenticate}/>;
+  if (!user) return <AuthGate onAuthenticated={handleAuthenticate} initialError={sessionError}/>;
 
   return (
     <div className="min-h-screen flex flex-col bg-[#060913] text-slate-100">

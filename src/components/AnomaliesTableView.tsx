@@ -121,8 +121,11 @@ export const AnomaliesTableView: React.FC<AnomaliesTableViewProps> = ({
             )}
           </div>
           <h1 className="text-2xl sm:text-[26px] font-bold tracking-tight text-slate-900">
-            Anomalous Events &amp; Feature Telemetry
+            Log Events Explorer
           </h1>
+          <p className="text-xs text-slate-500 mt-1">
+            Filter unusual rows, search by service or message, and click any row to see which metric made it stand out.
+          </p>
         </div>
 
         <div className="flex items-center gap-3">
@@ -536,7 +539,7 @@ export const AnomaliesTableView: React.FC<AnomaliesTableViewProps> = ({
                 {/* Isolation Forest Metrics */}
                 <div className="grid grid-cols-2 gap-3 bg-slate-50 border border-slate-200/80 rounded-xl p-3.5 text-xs">
                   <div>
-                    <div className="text-slate-500 font-medium">IForest Score s(x,n)</div>
+                    <div className="text-slate-500 font-medium">Unusualness Score</div>
                     <div
                       className={`text-lg font-bold font-mono tabular-nums mt-0.5 ${
                         activeEvent.is_anomaly ? 'text-red-600' : 'text-slate-900'
@@ -544,19 +547,19 @@ export const AnomaliesTableView: React.FC<AnomaliesTableViewProps> = ({
                     >
                       {activeEvent.anomaly_score.toFixed(4)}
                     </div>
-                    <div className="text-[11px] text-slate-400 font-mono mt-0.5">
-                      {run.isolation_forest.threshold_score != null
-                        ? `Cutoff ≥ ${run.isolation_forest.threshold_score}`
-                        : 'No anomaly cutoff'}
+                    <div className="text-[11px] text-slate-500 mt-0.5">
+                      0 = normal · 1 = most unusual ({run.isolation_forest.threshold_score != null
+                        ? `cutoff ≥ ${run.isolation_forest.threshold_score}`
+                        : 'no anomalies'})
                     </div>
                   </div>
                   <div>
-                    <div className="text-slate-500 font-medium">Mean Tree Depth E(h(x))</div>
+                    <div className="text-slate-500 font-medium">Isolation Depth</div>
                     <div className="text-lg font-bold font-mono tabular-nums text-slate-900 mt-0.5">
                       {activeEvent.isolation_depth}
                     </div>
-                    <div className="text-[11px] text-slate-400 font-mono mt-0.5">
-                      Driver: {activeEvent.primary_driver}
+                    <div className="text-[11px] text-slate-500 mt-0.5">
+                      Lower = isolated faster · Top driver: <span className="font-mono">{activeEvent.primary_driver}</span>
                     </div>
                   </div>
                 </div>

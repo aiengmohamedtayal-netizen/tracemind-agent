@@ -175,34 +175,35 @@ export const PsoAgentView: React.FC<PsoAgentViewProps> = ({
             <div className="flex items-center gap-2">
               <Cpu className="w-4 h-4 text-blue-600" aria-hidden="true" />
               <h2 className="text-base font-bold text-slate-900">
-                01. Particle Swarm Optimization (PSO) Candidate Action Matrix
+                01. Candidate Read-Only Checks Ranked by PSO
               </h2>
             </div>
             <p className="text-xs text-slate-500 mt-1">
-              Multi-objective fitness evaluation across candidate remediation actions (Weights: Mitigation{' '}
+              PSO compares 5 safe investigation checks and picks the highest overall score — balancing expected usefulness (
               <strong className="font-mono text-slate-700">
                 {Math.round(pso.optimal_weights.mitigation_weight * 100)}%
-              </strong>{' '}
-              · SLA Safety{' '}
+              </strong>
+              ), low risk (
               <strong className="font-mono text-slate-700">
                 {Math.round(pso.optimal_weights.sla_safety_weight * 100)}%
-              </strong>{' '}
-              · Cost{' '}
+              </strong>
+              ), low effort cost (
               <strong className="font-mono text-slate-700">
                 {Math.round(pso.optimal_weights.cost_weight * 100)}%
-              </strong>{' '}
-              · Speed{' '}
+              </strong>
+              ), and speed (
               <strong className="font-mono text-slate-700">
                 {Math.round(pso.optimal_weights.speed_weight * 100)}%
-              </strong>)
+              </strong>
+              ).
             </p>
           </div>
           <div
             className="text-xs font-mono text-slate-700 bg-slate-100 px-3 py-1.5 rounded-lg tabular-nums shrink-0"
-            title="Baseline equals the combined cost of executing all candidate investigation actions"
+            title="Baseline equals the combined notional cost of running all 5 candidate checks"
           >
-            All-Actions Baseline: ${pso.baseline_cost_usd} &rarr; Selected:{' '}
-            <strong className="text-emerald-700">${pso.optimized_cost_usd} (-{pso.estimated_savings_pct}%)</strong>
+            All-5 Checks Cost: ${pso.baseline_cost_usd} &rarr; Selected:{' '}
+            <strong className="text-emerald-700">${pso.optimized_cost_usd} (-{pso.estimated_savings_pct}% saved)</strong>
           </div>
         </div>
 
@@ -287,10 +288,10 @@ export const PsoAgentView: React.FC<PsoAgentViewProps> = ({
                     <td className="py-3.5 px-4 whitespace-nowrap">
                       {act.is_selected ? (
                         <span className="text-blue-700 font-bold">
-                          PSO Optimal Selection
+                          Selected Best Check
                         </span>
                       ) : (
-                        <span className="text-slate-500">Sub-optimal</span>
+                        <span className="text-slate-500">Alternative</span>
                       )}
                     </td>
                   </tr>
@@ -312,19 +313,22 @@ export const PsoAgentView: React.FC<PsoAgentViewProps> = ({
                 Intelligent Agent Reasoning
               </span>
               <span aria-hidden="true">·</span>
-              <span className="font-mono font-semibold text-slate-700">
-                Evidence coverage {evidenceCoverage}%
+              <span className="font-mono font-semibold text-slate-700" title="Percentage of required upstream inputs received by the Agent (not a certainty score)">
+                Evidence completeness {evidenceCoverage}%
               </span>
             </div>
             <h2 className="text-base font-bold text-slate-900 mt-1">
-              02. Root-Cause Diagnosis &amp; Policy Justification
+              02. Plain-Language Report &amp; Safety Checks
             </h2>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Deterministic summary built only from your log numbers — offers investigation leads, not confirmed root causes.
+            </p>
           </div>
 
           <div className="space-y-4 text-sm text-slate-700 leading-relaxed">
             <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80">
               <h3 className="text-xs font-bold text-slate-900 mb-1">
-                Telemetry Root-Cause Analysis
+                What Stood Out (Investigation Leads)
               </h3>
               <p className="text-xs sm:text-sm text-slate-700 leading-relaxed">
                 {agent.root_cause_analysis}

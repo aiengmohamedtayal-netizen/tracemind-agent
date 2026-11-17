@@ -78,32 +78,33 @@ export const OverviewView: React.FC<OverviewViewProps> = ({run,isLoading,backend
               <ScoreChart distribution={distribution} peak={peak} reduceMotion={Boolean(reduceMotion)} />
             </div>
             <div className="mt-9 grid grid-cols-2 border-y border-white/10 lg:grid-cols-4">
-              <Metric label="Events analyzed" value={run.isolation_forest.total_events} note="Validated event records" icon={<Waves />} />
-              <Metric label="Anomalous signals" value={run.isolation_forest.anomalous_events_count} note={`${run.isolation_forest.anomaly_rate_pct}% of this run`} icon={<ScanSearch />} alert={anomalies.length > 0} />
-              <Metric label="Affected services" value={affected.length} note={affected.slice(0, 2).join(', ') || 'No specific service'} icon={<Database />} />
-              <Metric label="Analysis duration" value={`${run.duration_ms}ms`} note="Request received to result saved" icon={<Activity />} />
+              <Metric label="Total rows checked" value={run.isolation_forest.total_events} note="Valid log rows read from your file" icon={<Waves />} />
+              <Metric label="Unusual rows (anomalies)" value={run.isolation_forest.anomalous_events_count} note={`${run.isolation_forest.anomaly_rate_pct}% stood out from normal behavior`} icon={<ScanSearch />} alert={anomalies.length > 0} />
+              <Metric label="Affected services" value={affected.length} note={affected.slice(0, 2).join(', ') || 'No service flagged'} icon={<Database />} />
+              <Metric label="Processing time" value={`${run.duration_ms}ms`} note="Time taken to analyze and save" icon={<Activity />} />
             </div>
             <div className="grid gap-8 py-8 lg:grid-cols-[1fr_.8fr]">
               <section aria-labelledby="next-step-title">
-                <p className="text-xs text-slate-500">Recommendation linked to the PSO decision</p>
+                <p className="text-xs text-slate-400">Recommended next step (read-only check picked by PSO)</p>
                 <h2 id="next-step-title" className="mt-3 max-w-xl text-2xl font-medium tracking-tight text-white">{action.title}</h2>
                 <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400">{run.agent_recommendation.why_action_selected}</p>
                 <div className="mt-5 flex flex-wrap gap-x-7 gap-y-3 text-xs">
-                  <span><span className="text-slate-500">Statistical driver</span><strong className="ml-2 font-mono text-emerald-300">{driver}</strong></span>
-                  <span><span className="text-slate-500">Action scope</span><strong className="ml-2 text-slate-200">Read-only</strong></span>
-                  <span><span className="text-slate-500">Evidence coverage</span><strong className="ml-2 text-slate-200">{run.agent_recommendation.evidence_coverage_pct ?? run.agent_recommendation.confidence_score_pct}%</strong></span>
+                  <span title="The main metric that differed most in flagged rows"><span className="text-slate-500">Top unusual metric</span><strong className="ml-2 font-mono text-emerald-300">{driver}</strong></span>
+                  <span title="TraceMind never modifies your servers or runs live commands"><span className="text-slate-500">Safety</span><strong className="ml-2 text-slate-200">Read-only (safe)</strong></span>
+                  <span title="How complete the inputs to the Agent were (not a certainty percentage)"><span className="text-slate-500">Evidence completeness</span><strong className="ml-2 text-slate-200">{run.agent_recommendation.evidence_coverage_pct ?? run.agent_recommendation.confidence_score_pct}%</strong></span>
                 </div>
                 <button type="button" onClick={() => onNavigate('investigate')} className="mt-6 inline-flex items-center gap-2 text-sm font-medium text-emerald-300 transition-colors hover:text-emerald-200">
-                  Open investigation workspace<ArrowUpRight className="h-4 w-4" />
+                  Explore events &amp; full recommendation<ArrowUpRight className="h-4 w-4" />
                 </button>
               </section>
               <section aria-labelledby="priority-events-title" className="border-t border-white/10 pt-5 lg:border-l lg:border-t-0 lg:pl-7 lg:pt-0">
                 <div className="flex items-center justify-between">
-                  <h2 id="priority-events-title" className="text-sm font-medium text-slate-200">Highest-priority events</h2>
+                  <h2 id="priority-events-title" className="text-sm font-medium text-slate-200">Most unusual rows</h2>
                   <span className="font-mono text-xs text-slate-500">TOP 03</span>
                 </div>
+                <p className="mt-1 text-[11px] text-slate-500">Click any row to see which numbers made it stand out (0 = normal, 1 = most unusual).</p>
                 {anomalies.length === 0 ? (
-                  <p className="mt-5 text-sm text-slate-400">The model did not classify any events as unusual in this run.</p>
+                  <p className="mt-5 text-sm text-slate-400">No unusual rows were found in this file — everything looks consistent.</p>
                 ) : (
                   <ul className="mt-3 divide-y divide-white/[.07]">
                     {anomalies.slice(0, 3).map((event, index) => (
@@ -125,22 +126,13 @@ export const OverviewView: React.FC<OverviewViewProps> = ({run,isLoading,backend
                 )}
               </section>
             </div>
-            <div className="flex items-center justify-between border-t border-white/10 pt-4 text-[10px] text-slate-600">
-              <span>TraceMind / Evidence-led investigation support</span>
+            <div className="flex items-center justify-between border-t border-white/10 pt-4 text-[10px] text-slate-500">
+              <span>TraceMind — Read-only analysis leads (never modifies your servers)</span>
               <span className="font-mono">{run.pso_optimization.algorithm} · {run.agent_recommendation.agent_version}</span>
             </div>
           </motion.div>
         </div>
       </section>
-
-      <Suspense fallback={<div className="min-h-[30vh] animate-pulse rounded-3xl bg-slate-900" aria-busy="true" aria-label="Loading platform overview" />}>
-        <LandingPageSection
-          onNavigate={onNavigate}
-          backendReachable={backendReachable}
-          loadError={loadError}
-          onRetry={onRetry}
-        />
-      </Suspense>
     </div>
   );
 };
@@ -149,7 +141,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({run,isLoading,backend
 function ScoreChart({distribution,peak,reduceMotion}:{distribution:AnalysisRun['isolation_forest']['score_distribution'];peak:number;reduceMotion:boolean}) {
   const width=560,height=170,pad=12; const points=distribution.map((bin,i)=>({x:pad+i*(width-pad*2)/Math.max(1,distribution.length-1),y:height-pad-((bin.normal_count+bin.anomaly_count)/peak)*(height-pad*2),anomaly:bin.anomaly_count}));
   const line=points.map((p,i)=>`${i?'L':'M'} ${p.x} ${p.y}`).join(' '); const area=`${line} L ${points.at(-1)?.x??width} ${height} L ${points[0]?.x??0} ${height} Z`;
-  return <div className="border-l border-white/10 pl-5" aria-label="Actual anomaly score distribution"><div className="mb-3 flex items-center justify-between"><div><p className="text-xs text-slate-300">Anomaly signal distribution</p><p className="mt-1 text-[10px] text-slate-600">Saved scores from this run</p></div><span className="inline-flex items-center gap-1.5 text-[10px] text-emerald-300"><span className="h-1.5 w-1.5 rounded-full bg-emerald-300"/>LIVE DATA</span></div><svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Distribution of normal and anomalous events" className="w-full overflow-visible"><defs><linearGradient id="overviewFill" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="#34d399" stopOpacity=".32"/><stop offset="100%" stopColor="#34d399" stopOpacity="0"/></linearGradient></defs>{[.25,.5,.75].map(v=><line key={v} x1="0" x2={width} y1={height*v} y2={height*v} stroke="white" strokeOpacity=".08" strokeDasharray="3 7"/>)}<path d={area} fill="url(#overviewFill)"/><motion.path d={line} fill="none" stroke="#6ee7b7" strokeWidth="2.5" strokeLinecap="round" initial={reduceMotion?false:{pathLength:0,opacity:.4}} animate={{pathLength:1,opacity:1}} transition={{duration:1.15,ease:'easeOut'}}/>{points.filter(p=>p.anomaly>0).map((p,i)=><circle key={`${p.x}-${i}`} cx={p.x} cy={p.y} r="4" fill="#fb7185" stroke="#151d2c" strokeWidth="2"/>)}<text x="0" y={height} fill="#64748b" fontSize="9">Less unusual</text><text x={width} y={height} textAnchor="end" fill="#64748b" fontSize="9">More unusual</text></svg></div>;
+  return <div className="border-l border-white/10 pl-5" aria-label="Actual anomaly score distribution"><div className="mb-3 flex items-center justify-between"><div><p className="text-xs text-slate-200">How unusual the log rows look</p><p className="mt-1 text-[10px] text-slate-500">Left = normal rows · Right = unusual rows (red dots = flagged anomalies)</p></div><span className="inline-flex items-center gap-1.5 text-[10px] text-emerald-300"><span className="h-1.5 w-1.5 rounded-full bg-emerald-300"/>LIVE DATA</span></div><svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Distribution of normal and anomalous events" className="w-full overflow-visible"><defs><linearGradient id="overviewFill" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="#34d399" stopOpacity=".32"/><stop offset="100%" stopColor="#34d399" stopOpacity="0"/></linearGradient></defs>{[.25,.5,.75].map(v=><line key={v} x1="0" x2={width} y1={height*v} y2={height*v} stroke="white" strokeOpacity=".08" strokeDasharray="3 7"/>)}<path d={area} fill="url(#overviewFill)"/><motion.path d={line} fill="none" stroke="#6ee7b7" strokeWidth="2.5" strokeLinecap="round" initial={reduceMotion?false:{pathLength:0,opacity:.4}} animate={{pathLength:1,opacity:1}} transition={{duration:1.15,ease:'easeOut'}}/>{points.filter(p=>p.anomaly>0).map((p,i)=><circle key={`${p.x}-${i}`} cx={p.x} cy={p.y} r="4" fill="#fb7185" stroke="#151d2c" strokeWidth="2"/>)}<text x="0" y={height} fill="#64748b" fontSize="9">Normal (0.0)</text><text x={width} y={height} textAnchor="end" fill="#64748b" fontSize="9">Most unusual (1.0)</text></svg></div>;
 }
 
 function Metric({label,value,note,icon,alert=false}:{label:string;value:number|string;note:string;icon:React.ReactNode;alert?:boolean}) { return <div className="min-w-0 border-r border-white/[.07] py-5 pr-4 first:border-0 first:pr-0 sm:px-4"><div className="flex items-center gap-2 text-slate-500"><span className="tm-overview-metric-icon text-emerald-300">{icon}</span><span className="truncate text-[10px] sm:text-xs">{label}</span></div><p className={`mt-3 font-mono text-2xl tracking-tight sm:text-3xl ${alert?'text-rose-300':'text-white'}`}>{value}</p><p className="mt-1 truncate text-[10px] text-slate-600">{note}</p></div>; }

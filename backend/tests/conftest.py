@@ -12,10 +12,10 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setenv("CORS_ORIGINS", "http://localhost:3000")
     import app.core.config as config_module
     config_module.get_settings.cache_clear()
+    import app.api.routes as routes_module
     import app.db.database as database_module
     import app.db.models as models_module
     import app.db.repository as repository_module
-    import app.api.routes as routes_module
     import app.main as main_module
     for module in (database_module, models_module, repository_module, routes_module, main_module):
         importlib.reload(module)

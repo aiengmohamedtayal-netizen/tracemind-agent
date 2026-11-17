@@ -8,6 +8,7 @@ def test_pso_returns_valid_discrete_selection():
     ]
     result = optimize_actions(actions, swarm_size=20, max_iterations=20, inertia_weight=.72, cognitive_coeff=1.49, social_coeff=1.49, random_seed=42).payload
     assert result["selected_action"]["action_id"] in {"a", "b"}
+    assert result["baseline_cost_usd"] == 45.0
     assert sum(action["is_selected"] for action in result["candidate_actions"]) == 1
     assert len(result["convergence_history"]) == 20
     assert exhaustive_best_action(actions) in {0, 1}

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from sqlalchemy import create_engine, event, text
-from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
+from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 from app.core.config import get_settings
 

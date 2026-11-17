@@ -12,7 +12,6 @@ from app.services.agent.models import (
     SelectedIntention,
 )
 
-
 _ACTION_OBJECTIVES = {
     "ACT-SERVICE": "Inspect the anomalous service cohort without modifying monitored systems.",
     "ACT-TIMELINE": "Inspect correlated event time windows without modifying monitored systems.",

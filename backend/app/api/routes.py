@@ -4,32 +4,35 @@ import json
 from datetime import UTC, datetime
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from pydantic import ValidationError as PydanticValidationError
-from sqlalchemy.orm import Session
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from sqlalchemy import select, update
+from sqlalchemy.orm import Session
 from starlette.concurrency import run_in_threadpool
 
 from app.core.config import Settings, get_settings
 from app.core.exceptions import NotFoundError, ValidationError
 from app.db.database import SessionLocal, check_database_connection, get_session
+from app.db.models import RefreshTokenModel, UserModel
 from app.db.repository import AnalysisRepository
 from app.schemas.analysis import AnalysisConfig, JsonAnalysisRequest
+from app.schemas.auth import Credentials
 from app.services.analysis_orchestrator import AnalysisOrchestrator
-from app.services.auth import get_current_user, hasher, hash_token, issue_pair
-from app.db.models import RefreshTokenModel, UserModel
-from app.schemas.auth import Credentials, RefreshRequest
-from slowapi import Limiter
-from slowapi.util import get_remote_address
+from app.services.auth import get_current_user, hash_token, hasher, issue_pair
 
 router = APIRouter()
 repository = AnalysisRepository()
 limiter = Limiter(key_func=get_remote_address)
-_auth_limit = get_settings().auth_rate_limit
+
+
+def _auth_rate_limit() -> str:
+    return get_settings().auth_rate_limit
 
 
 @router.post("/auth/register", status_code=201)
-@limiter.limit(_auth_limit)
+@limiter.limit(_auth_rate_limit)
 def register(request: Request, credentials: Credentials, session: Session = Depends(get_session)) -> dict:
     email = str(credentials.email).strip().lower()
     if session.scalar(select(UserModel).where(UserModel.email == email)):
@@ -45,7 +48,7 @@ def register(request: Request, credentials: Credentials, session: Session = Depe
 
 
 @router.post("/auth/login")
-@limiter.limit(_auth_limit)
+@limiter.limit(_auth_rate_limit)
 def login(request: Request, credentials: Credentials, session: Session = Depends(get_session)) -> dict:
     email = str(credentials.email).strip().lower()
     user = session.scalar(select(UserModel).where(UserModel.email == email))
@@ -181,8 +184,8 @@ def _analyze_and_persist(
 
 @router.get("/history")
 def list_history(
-    limit: int = 20,
-    offset: int = 0,
+    limit: int = Query(default=20, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
     session: Session = Depends(get_session),
     user: UserModel = Depends(get_current_user),
 ) -> dict:

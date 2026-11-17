@@ -5,6 +5,18 @@ def test_health_and_complete_analysis_lifecycle(client, valid_events):
     account = client.post("/api/auth/register", json={"email": "integration@example.com", "password": "correct horse battery staple"}).json()
     auth = {"Authorization": f"Bearer {account['access_token']}"}
     assert client.get("/api/health").json()["database"] == "sqlite_connected"
+    assert client.get("/health").status_code == 200
+    assert client.get("/health").json()["database"] == "sqlite_connected"
+    preflight = client.options(
+        "/api/history",
+        headers={
+            "Origin": "http://localhost:3000",
+            "Access-Control-Request-Method": "GET",
+            "Access-Control-Request-Headers": "authorization,content-type",
+        },
+    )
+    assert preflight.status_code == 200
+    assert "authorization" in preflight.headers.get("access-control-allow-headers", "").lower()
     submitted = client.post("/api/analyze", json={"dataset_name": "fixture.json", "format": "JSON", "content": json.dumps(valid_events), "config": {"contamination": .2, "n_estimators": 50, "swarm_size": 20, "max_iterations": 10, "inertia_weight": .72, "cognitive_coeff": 1.49, "social_coeff": 1.49}}, headers=auth)
     assert submitted.status_code == 200, submitted.text
     report = submitted.json()
@@ -16,7 +28,11 @@ def test_health_and_complete_analysis_lifecycle(client, valid_events):
     assert trace["selected_intention"]["action_id"] == report["pso_optimization"]["selected_action"]["action_id"]
     assert all(plan["advisory_only"] for plan in trace["candidate_plans"])
     run_id = report["run_id"]
-    assert client.get("/api/history", headers=auth).json()["runs"][0]["run_id"] == run_id
+    history_page = client.get("/api/history?limit=1&offset=0", headers=auth).json()
+    assert history_page["runs"][0]["run_id"] == run_id
+    assert history_page["limit"] == 1
+    assert history_page["offset"] == 0
+    assert client.get("/api/history?limit=1&offset=1", headers=auth).json()["runs"] == []
     assert client.get(f"/api/history/{run_id}", headers=auth).json()["run_id"] == run_id
     assert len(client.get(f"/api/history/{run_id}/events", headers=auth).json()["events"]) == len(valid_events)
     assert client.delete(f"/api/history/{run_id}", headers=auth).status_code == 204

@@ -112,11 +112,10 @@ def detect_anomalies(events: list[dict], *, contamination: float, n_estimators: 
         "mean_anomaly_score": round(float(np.mean(anomaly_scores)), 6),
         "max_anomaly_score": round(float(np.max(anomaly_scores)), 6),
         "score_distribution": _score_distribution(evaluated),
-        "feature_importances": _feature_importances(matrix, evaluated),
+        "feature_importances": _feature_importances(matrix, scaled, evaluated, feature_names, units),
     }
     if generic_logs:
         summary["input_profile"] = "generic_log"
-        summary["feature_importances"] = _feature_importances(matrix, evaluated, feature_names, units)
     return DetectionResult(events=evaluated, summary=summary)
 
 
@@ -125,6 +124,11 @@ def _feature_value(event: dict, feature: str) -> float:
 
 
 def _severity(score: float, is_anomaly: bool) -> str:
+    """Map per-run normalized score to display severity bands.
+
+    The 0.80 (critical) and 0.60 (high) cutoffs are uncalibrated display thresholds
+    for visual triage in the UI; model classification (`is_anomaly`) remains authoritative.
+    """
     if not is_anomaly:
         return "normal"
     if score >= 0.80:
@@ -135,7 +139,6 @@ def _severity(score: float, is_anomaly: bool) -> str:
 
 
 def _score_distribution(events: list[dict]) -> list[dict]:
-    scores = np.array([event["anomaly_score"] for event in events], dtype=float)
     edges = np.linspace(0.0, 1.0, 6)
     return [
         {
@@ -151,13 +154,20 @@ def _score_distribution(events: list[dict]) -> list[dict]:
 
 def _feature_importances(
     matrix: np.ndarray,
+    scaled: np.ndarray,
     events: list[dict],
     features: tuple[str, ...] = FEATURES,
     units: dict[str, str] = FEATURE_UNITS,
 ) -> list[dict]:
+    """Heuristic feature deviation summary (mean absolute standardized z-score).
+
+    Retains the `feature_importances` response key for client compatibility. This is a
+    descriptive mean standardized deviation heuristic, not tree-based Isolation Forest
+    feature importance or SHAP attribution.
+    """
     anomalous_indices = [index for index, event in enumerate(events) if event["is_anomaly"]]
     normal_indices = [index for index, event in enumerate(events) if not event["is_anomaly"]]
-    deviations = np.abs(StandardScaler().fit_transform(matrix)).mean(axis=0)
+    deviations = np.abs(scaled).mean(axis=0)
     total = float(deviations.sum()) or 1.0
     return [
         {

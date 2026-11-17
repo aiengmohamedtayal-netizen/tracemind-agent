@@ -54,6 +54,7 @@ def test_refresh_token_reuse_revokes_active_family(client):
 
 def test_legacy_ownerless_runs_remain_inaccessible(client):
     from datetime import UTC, datetime
+
     from app.db.database import SessionLocal
     from app.db.models import AnalysisRunModel
 
@@ -74,8 +75,10 @@ def test_legacy_ownerless_runs_remain_inaccessible(client):
 
 def test_production_settings_reject_missing_or_short_jwt_secret():
     import secrets
+
     import pytest
     from pydantic import ValidationError
+
     from app.core.config import Settings
 
     with pytest.raises(ValidationError):
@@ -93,6 +96,7 @@ def test_production_settings_reject_missing_or_short_jwt_secret():
 def test_concurrent_refresh_requests_do_not_leave_multiple_live_tokens(client):
     from concurrent.futures import ThreadPoolExecutor
     from http.cookies import SimpleCookie
+
     from fastapi.testclient import TestClient
 
     signup(client, "parallel-refresh@example.com")

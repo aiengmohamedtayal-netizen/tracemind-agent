@@ -8,15 +8,15 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from starlette.middleware.gzip import GZipMiddleware
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
+from starlette.middleware.gzip import GZipMiddleware
 
-from app.api.routes import router, health as health_handler
+from app.api.routes import health as health_handler
+from app.api.routes import limiter, router
 from app.core.config import get_settings
 from app.core.exceptions import DomainError
-from app.db.database import engine, Base
-from app.api.routes import limiter
+from app.db.database import Base, check_database_connection, engine
 
 settings = get_settings()
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
@@ -27,7 +27,8 @@ logger = logging.getLogger("tracemind")
 async def lifespan(_: FastAPI):
     # Safety net: create tables if they don't exist (alembic migrations are the canonical path).
     Base.metadata.create_all(bind=engine)
-    logger.info("Database tables verified/created.")
+    check_database_connection()
+    logger.info("Database connection verified and schema ready.")
     logger.info("Models available: IsolationForest, PSO, IntelligentAgent.")
     yield
 
@@ -36,6 +37,8 @@ app = FastAPI(title="TraceMind API", version="1.0.0", lifespan=lifespan)
 app.add_middleware(GZipMiddleware, minimum_size=1024)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+# Note: Only GET, POST, and DELETE are currently exposed. Any new PUT or PATCH
+# endpoint must be added to allow_methods below so browser preflight succeeds.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,

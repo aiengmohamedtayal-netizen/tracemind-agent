@@ -1,6 +1,13 @@
 from app.services.anomaly_detection import detect_anomalies
 from app.services.pso_optimizer import action_fitness, exhaustive_best_action, optimize_actions
-from validation.fixtures import ISOLATION_FOREST_BASELINE, PSO_BASELINE, constant_events, copy_events, labelled_outlier_events, pso_actions
+from validation.fixtures import (
+    ISOLATION_FOREST_BASELINE,
+    PSO_BASELINE,
+    constant_events,
+    copy_events,
+    labelled_outlier_events,
+    pso_actions,
+)
 
 
 def test_labelled_fixture_reports_all_confusion_matrix_terms():
@@ -15,6 +22,7 @@ def test_labelled_fixture_reports_all_confusion_matrix_terms():
 def test_constant_fixture_has_safe_non_fabricated_output():
     result = detect_anomalies(constant_events(), **ISOLATION_FOREST_BASELINE)
     assert result.summary["anomalous_events_count"] == 0
+    assert result.summary["threshold_score"] is None
     assert all(event["anomaly_score"] == 0.0 and not event["is_anomaly"] for event in result.events)
 
 

@@ -1,9 +1,11 @@
 import json
+
 import pytest
+
 from app.core.exceptions import ValidationError
-from app.services.ingestion import parse_event_content
-from app.services.anomaly_detection import detect_anomalies
 from app.services.action_catalog import build_candidate_actions
+from app.services.anomaly_detection import detect_anomalies
+from app.services.ingestion import parse_event_content
 
 
 def test_parses_valid_json(valid_events):
@@ -22,6 +24,8 @@ def test_rejects_missing_fields(valid_events):
 def test_rejects_malformed_json():
     with pytest.raises(ValidationError, match="Malformed JSON"):
         parse_event_content("{no", "JSON")
+    with pytest.raises(ValidationError, match="recognized telemetry or log columns"):
+        parse_event_content("foo,bar\n1,2\n3,4", "CSV")
 
 
 def test_parses_spark_text_logs_without_fabricating_telemetry():

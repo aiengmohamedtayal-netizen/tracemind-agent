@@ -1,202 +1,348 @@
 # TraceMind
 
-TraceMind analyzes authorized application or system event logs. The React client submits CSV, JSON, JSONL, or plain-text log data to a FastAPI service, which validates it, runs Isolation Forest anomaly detection, chooses a read-only investigation action with binary PSO, records a deterministic evidence-bound recommendation, and persists the run in SQLite.
+<p align="center">
+  <strong>منصة لتحليل سجلات الأحداث واكتشاف السلوك غير الطبيعي ودعم التحقيق الفني.</strong>
+</p>
 
-## Architecture
+<p align="center">
+  حل تعليمي يجمع بين تحليل البيانات، واكتشاف الشذوذ، والتحسين باستخدام Binary PSO، والتوصيات المعتمدة على الأدلة.
+</p>
 
-```text
-React / Vite → /api proxy → FastAPI routes → AnalysisOrchestrator
-                                              ├─ ingestion & validation
-                                              ├─ Isolation Forest
-                                              ├─ read-only action catalog + binary PSO
-                                              ├─ deterministic agent explanation
-                                              └─ SQLAlchemy repository → SQLite (WAL)
-```
+---
 
-The backend lives in [`backend/`](backend/). Its route handlers only parse HTTP requests and delegate to services; persistence is isolated in `app/db/repository.py`.
+## نبذة عن المشروع
 
-The frontend uses tab-based state navigation (`Overview`, `Analyze`, `Investigate`, `History`) behind an authenticated `AuthGate` rather than client-side URL routing. It contains **no mock data** — if the FastAPI backend is unavailable, the UI reports `Backend Unavailable` instead of fabricating analysis results.
+**TraceMind** تطبيق لتحليل سجلات الأحداث (Event Logs) وبيانات مراقبة الأنظمة والخدمات. يسمح برفع ملفات السجلات، والتحقق من صحة البيانات، واكتشاف الأحداث غير المعتادة، ثم استعراض الأدلة والتوصيات التي تساعد على بدء التحقيق.
 
-## Requirements
+يتكون المشروع من واجهة ويب مبنية باستخدام **React وTypeScript وVite**، وخدمة خلفية باستخدام **Python وFastAPI**. تتولى الخدمة الخلفية تنفيذ مراحل التحليل وحفظ النتائج، بينما تتيح الواجهة استكشاف الأحداث وعمليات التحليل السابقة.
 
-- Node.js 22+ and npm
-- Python 3.11+
+> **تنويه:** TraceMind مشروع تعليمي/بحثي للمساعدة في تحليل السجلات. التوصيات الناتجة هي مؤشرات للتحقيق وليست إثباتًا لسبب جذري مؤكد. لا ينفذ النظام إجراءات على الأنظمة الخارجية؛ إجراءات التحقيق المعروضة للقراءة والتقييم فقط.
 
-## Run locally
+## المشكلة التي يعالجها
 
-### One-command startup
+تنتج التطبيقات والخدمات كميات كبيرة من سجلات الأحداث والقياسات التشغيلية. وقد يصعب اكتشاف الأنماط غير المعتادة وربطها بالأدلة يدويًا.
 
-- **Linux / macOS**:
-  ```bash
-  chmod +x scripts/start-tracemind.sh
-  ./scripts/start-tracemind.sh
-  ```
-  This creates `.venv`, installs backend dependencies, copies `backend/.env.example` to `backend/.env` if missing, applies Alembic migrations (`alembic upgrade head`), starts FastAPI (`127.0.0.1:8000`) with a health check, installs frontend dependencies, and starts Vite (`localhost:3000`).
+يساعد TraceMind في تنظيم هذه العملية من خلال:
+- استقبال ملفات السجلات والتحقق من تنسيقها وجودة بياناتها.
+- اكتشاف الأحداث التي تختلف عن النمط المعتاد.
+- تقييم خيارات التحقيق المقترحة وفق معايير محددة.
+- تقديم تفسير حتمي (Deterministic) مرتبط بالأدلة المتاحة.
+- حفظ نتائج التحليل وإتاحة مراجعتها لاحقًا.
 
-- **Windows**: Double-click [`Start-TraceMind.bat`](Start-TraceMind.bat) (or run `powershell -ExecutionPolicy Bypass -File scripts\start-tracemind.ps1`). It reuses healthy local services, installs missing dependencies, applies SQLite migrations, starts FastAPI and Vite in the background, waits for health checks, and opens the app. The local database is `data\tracemind.db`; service logs are written to `logs\`.
+## المزايا الرئيسية
 
-### Manual startup (Linux / macOS)
+| الميزة | الوصف |
+| --- | --- |
+| رفع السجلات | دعم CSV وJSON وJSONL وملفات النصوص والسجلات |
+| التحقق من البيانات | فحص الحقول والقيم والتنسيقات قبل التحليل |
+| اكتشاف الشذوذ | استخدام Isolation Forest لاكتشاف الأحداث غير المعتادة |
+| تصنيف الخطورة | استخدام مصنف Severity لتقديم تصنيف مساعد |
+| تخطيط التحقيق | استخدام Binary Particle Swarm Optimization لاختيار إجراء قراءة مناسب |
+| الوكيل الذكي | إنتاج تفسير وتوصية حتمية بالاعتماد على الأدلة |
+| سجل التحليلات | حفظ عمليات التحليل ومراجعتها وحذفها |
+| الحسابات | تسجيل الدخول وعزل بيانات المستخدمين |
+| واجهة تفاعلية | شاشات Overview وAnalyze وInvestigate وHistory |
 
-1. Create a Python virtual environment, install backend dependencies, and configure environment variables:
-   ```bash
-   python3 -m venv .venv
-   source .venv/bin/activate
-   pip install -r backend/requirements.txt
-   cp backend/.env.example backend/.env
-   ```
+## كيف يعمل TraceMind؟
 
-2. Apply database migrations (required before first start; the FastAPI lifespan also runs `Base.metadata.create_all` as a safety net for fresh local SQLite databases):
-   ```bash
-   PYTHONPATH=backend python -m alembic -c backend/alembic.ini upgrade head
-   ```
+1. **استقبال الملف:** قراءة البيانات وتحديد نوع الملف.
+2. **التحقق والمعالجة:** التأكد من صحة البنية والحقول والقيم وتجهيز البيانات.
+3. **اكتشاف الشذوذ:** تطبيق Isolation Forest على القياسات الرقمية المناسبة.
+4. **تقييم خيارات التحقيق:** استخدام Binary PSO للمساعدة في اختيار إجراء من كتالوج إجراءات القراءة المحدد.
+5. **تفسير الأدلة:** يقوم الوكيل الحتمي بربط النتائج والأدلة وصياغة توصية قابلة للمراجعة.
+6. **حفظ النتائج:** تخزين نتائج التشغيل والأحداث المرتبطة بها.
+7. **عرض النتائج:** استعراض المؤشرات والأحداث والتوصيات وسجل التحليلات.
 
-3. Start the FastAPI backend from the repository root:
-   ```bash
-   PYTHONPATH=backend python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
-   ```
+## التقنيات المستخدمة
 
-4. In a second terminal, install and start the React/Vite frontend:
-   ```bash
-   npm install
-   npm run dev
-   ```
+| الطبقة | التقنيات |
+| --- | --- |
+| Frontend | React, TypeScript, Vite |
+| Backend | Python, FastAPI |
+| معالجة البيانات | Pandas, NumPy |
+| Machine Learning | Scikit-learn, Isolation Forest |
+| Optimization | Binary Particle Swarm Optimization |
+| Intelligent Agent | Deterministic, evidence-based agent |
+| Database | SQLite |
+| ORM & Migrations | SQLAlchemy, Alembic |
+| Authentication | Argon2, JWT, HttpOnly Cookies |
+| Testing | Pytest, Frontend tests, Playwright |
 
-<details>
-<summary>Manual startup on Windows (PowerShell)</summary>
+## المعمارية
 
-```powershell
-py -m venv .venv
+~~~text
+┌───────────────────────────────────────┐
+│             React Frontend             │
+│ Overview · Analyze · Investigate       │
+│                History                 │
+└───────────────────┬───────────────────┘
+                    │ HTTP /api
+                    ▼
+┌───────────────────────────────────────┐
+│             FastAPI Backend            │
+│             API Routes & Auth          │
+└───────────────────┬───────────────────┘
+                    ▼
+┌───────────────────────────────────────┐
+│          Analysis Orchestrator         │
+│  Ingestion & Validation                │
+│  Isolation Forest                      │
+│  Action Catalog + Binary PSO           │
+│  Evidence-based Intelligent Agent      │
+└───────────────────┬───────────────────┘
+                    ▼
+┌───────────────────────────────────────┐
+│        SQLAlchemy Repository           │
+│                SQLite                  │
+└───────────────────────────────────────┘
+~~~
+
+تعتمد الواجهة على Backend API حقيقي، ولا تستخدم بيانات تجريبية لإظهار نتائج تحليل لم يتم تنفيذها. عند تعذر الاتصال بالخدمة الخلفية، تعرض الواجهة حالة عدم توفر Backend بدلًا من اختلاق النتائج.
+
+## هيكل المستودع
+
+~~~text
+tracemind-agent/
+├── backend/
+│   ├── app/
+│   │   ├── api/          # مسارات وواجهات API
+│   │   ├── core/         # الإعدادات والمكونات الأساسية
+│   │   ├── db/           # قاعدة البيانات والتخزين
+│   │   ├── models/       # ملفات النماذج وبياناتها
+│   │   ├── schemas/      # مخططات البيانات والتحقق
+│   │   └── services/     # التحليل والخوارزميات والوكيل
+│   ├── tests/            # اختبارات Backend
+│   ├── requirements.txt
+│   └── alembic.ini
+├── docs/
+│   ├── architecture/     # توثيق المعمارية وواجهات API
+│   ├── validation/       # توثيق التحقق من الخوارزميات
+│   └── demo-sample.csv   # ملف بيانات للتجربة
+├── scripts/              # سكريبتات التشغيل
+├── src/                  # كود واجهة React
+├── public/               # الملفات العامة للواجهة
+├── Start-TraceMind.bat   # تشغيل سريع على Windows
+├── package.json
+└── README.md
+~~~
+
+## المتطلبات
+
+قبل التشغيل، تأكد من تثبيت:
+- **Git** لتنزيل المشروع.
+- **Python 3.11 أو أحدث**.
+- **Node.js 22 أو أحدث** مع npm.
+- اتصال بالإنترنت في أول مرة لتثبيت الاعتماديات.
+
+لا يحتاج مسار التحليل الموجود في المستودع إلى API Key لخدمة ذكاء اصطناعي خارجية.
+
+# تشغيل المشروع على جهازك
+
+## الطريقة الأولى: تشغيل سريع على Windows
+
+1. نزّل المشروع باستخدام Git.
+2. افتح مجلد المشروع.
+3. شغّل ملف **Start-TraceMind.bat** بالنقر عليه مرتين.
+
+أو افتح PowerShell ونفّذ:
+
+~~~powershell
+git clone https://github.com/aiengmohamedtayal-netizen/tracemind-agent.git
+cd tracemind-agent
+powershell -ExecutionPolicy Bypass -File scripts\start-tracemind.ps1
+~~~
+
+يقوم سكريبت التشغيل بتجهيز البيئة الافتراضية، وتثبيت اعتماديات Backend وFrontend عند الحاجة، وتجهيز ملف الإعدادات، وتطبيق ترحيلات قاعدة البيانات، ثم تشغيل الخدمتين وانتظار استجابتهما.
+
+بعد التشغيل افتح:
+- **التطبيق:** http://localhost:3000
+- **Backend Health:** http://127.0.0.1:8000/api/health
+
+## الطريقة الثانية: التشغيل اليدوي على Windows
+
+افتح نافذتي PowerShell داخل مجلد المشروع.
+
+### 1. تنزيل المشروع
+
+~~~powershell
+git clone https://github.com/aiengmohamedtayal-netizen/tracemind-agent.git
+cd tracemind-agent
+~~~
+
+### 2. إعداد Python Backend
+
+في النافذة الأولى:
+
+~~~powershell
+py -3.11 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r backend\requirements.txt
 Copy-Item backend\.env.example backend\.env
+~~~
 
+### 3. تجهيز قاعدة البيانات
+
+~~~powershell
 $env:PYTHONPATH = "backend"
 py -m alembic -c backend\alembic.ini upgrade head
-py -m uvicorn app.main:app --host 127.0.0.1 --port 8000
-```
+~~~
 
-In a second terminal:
-```powershell
+### 4. تشغيل Backend
+
+~~~powershell
+$env:PYTHONPATH = "backend"
+py -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+~~~
+
+اترك النافذة مفتوحة حتى تظل الخدمة الخلفية تعمل.
+
+### 5. تشغيل Frontend
+
+في نافذة PowerShell ثانية، من داخل مجلد المشروع:
+
+~~~powershell
 npm install
 npm run dev
-```
-</details>
+~~~
 
-Open `http://localhost:3000`. During local Vite development, requests to `/api` proxy to `http://127.0.0.1:8000`; alternatively set `VITE_API_BASE_URL=http://localhost:8000/api` in `.env.local` (CORS allows `Accept`, `Content-Type`, `Authorization`, and `X-Request-ID`).
+افتح http://localhost:3000.
 
-### Development & deployment notes
+## الطريقة الثالثة: التشغيل اليدوي على Linux وmacOS
 
-- **Vite `--host=0.0.0.0`**: `npm run dev` intentionally binds to `0.0.0.0` so an evaluator on the same local network can open the live demo from their machine. To bind strictly to localhost, run `npm run dev -- --host=127.0.0.1`.
-- **Auth rate limiting**: `/api/auth/register` and `/api/auth/login` default to `5/minute` via `AUTH_RATE_LIMIT` in `backend/.env`. For live demos where repeated login attempts may occur, set `AUTH_RATE_LIMIT=30/minute` in `backend/.env` without disabling rate limiting.
-- **CORS methods**: `backend/app/main.py` allows `GET`, `POST`, and `DELETE`. Any future `PUT` or `PATCH` endpoint must add that method to `allow_methods`.
-- **Offline font fallback**: `index.html` loads Google Fonts over CDN; in offline demo environments the UI falls back cleanly to local system sans/monospace fonts.
+### 1. تنزيل المشروع
 
-## API
+~~~bash
+git clone https://github.com/aiengmohamedtayal-netizen/tracemind-agent.git
+cd tracemind-agent
+~~~
 
-The frontend contract is served under `/api` (all analysis/history endpoints require a Bearer JWT from `/api/auth/register` or `/api/auth/login`; refresh tokens are stored in an `HttpOnly`, `SameSite=Strict` cookie):
+### 2. إعداد Backend
 
-- `GET /api/health` (and root alias `GET /health`) — validates the SQLite connection and reports available models.
-- `POST /api/auth/register` / `POST /api/auth/login` / `POST /api/auth/refresh` / `POST /api/auth/logout` / `GET /api/auth/me` — Argon2 + JWT authentication with rotating refresh token families.
-- `POST /api/analyze` — accepts multipart (`file`, `dataset_name`, `format`, and model fields) or JSON `{dataset_name, format, content, config}`.
-- `GET /api/history?limit=20&offset=0` — returns `{ "runs": AnalysisRun[], "limit": 20, "offset": 0 }` (default `limit=20`, max `100`).
-- `GET /api/history/{run_id}` — returns the saved complete run.
-- `GET /api/history/{run_id}/events` — returns `{ "events": EvaluatedEventRecord[] }`.
-- `DELETE /api/history/{run_id}` — atomically deletes the run and dependent event records.
+~~~bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r backend/requirements.txt
+cp backend/.env.example backend/.env
+~~~
 
-`POST /api/actions/simulate` remains intentionally unsupported: the UI treats it as disabled, and TraceMind does not execute actions on external systems. See [`docs/architecture/api-reference.md`](docs/architecture/api-reference.md) for full details.
+### 3. تجهيز قاعدة البيانات
 
-## Event data contract
+~~~bash
+PYTHONPATH=backend python -m alembic -c backend/alembic.ini upgrade head
+~~~
 
-Upload UTF-8 CSV with a header, JSON event array (or `{ "events": [...] }`), JSONL, or plain-text `.log`/`.txt` files. Structured telemetry requires:
+### 4. تشغيل Backend
 
-```text
+~~~bash
+PYTHONPATH=backend python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+~~~
+
+### 5. تشغيل Frontend
+
+افتح Terminal جديدًا داخل مجلد المشروع:
+
+~~~bash
+npm install
+npm run dev
+~~~
+
+ثم افتح http://localhost:3000.
+
+## تجربة المشروع لأول مرة
+
+بعد تشغيل الخدمتين:
+
+1. افتح TraceMind على http://localhost:3000.
+2. أنشئ حسابًا من شاشة التسجيل أو سجّل الدخول بحساب محلي أنشأته سابقًا.
+3. انتقل إلى **Analyze**.
+4. ارفع الملف [docs/demo-sample.csv](docs/demo-sample.csv).
+5. ابدأ عملية التحليل.
+6. راجع ملخص النتائج في **Overview**.
+7. انتقل إلى **Investigate** لفحص الأحداث والأدلة والتوصية.
+8. افتح **History** لمراجعة عمليات التحليل السابقة.
+
+### صيغة البيانات المدعومة
+
+يدعم النظام CSV وJSON وJSONL وملفات النصوص والسجلات. ويستخدم ملف CSV المنظم الحقول التالية:
+
+~~~csv
 event_id,timestamp,service,latency_ms,error_rate,cpu_pct,memory_mb,payload_bytes,status_code
-```
+~~~
 
-`timestamp` must be ISO-8601; `error_rate` is `0..1`; `cpu_pct` is `0..100`; and `status_code` is `100..599`. Optional fields are `event_type`, `source_ip`, and `message`. Structured log CSVs with recognized log columns (e.g., `Date`, `Time`, `Level`, `Component`, `Content`) and `.log`/`.txt`/JSONL files are processed under the `generic_log` profile without fabricating telemetry. Unrecognized CSV headers return HTTP 422 rather than silently converting to text. Both backend and frontend impose a 25 MB upload limit. Invalid telemetry records return HTTP 422 with row numbers — none are silently discarded.
+قواعد تحقق مهمة:
+- يجب أن يكون timestamp بصيغة ISO-8601.
+- قيمة error_rate بين 0 و1.
+- قيمة cpu_pct بين 0 و100.
+- قيمة status_code بين 100 و599.
+- الحد الأقصى لحجم الملف 25 MB.
 
-## Analysis methods & design rationale
+يوجد ملف تجربة جاهز في docs/demo-sample.csv، لذلك لا تحتاج إلى إنشاء Dataset بنفسك للبدء.
 
-See [`docs/validation/pso-design-rationale.md`](docs/validation/pso-design-rationale.md) for full mathematical and calibration notes. Key points for evaluators:
+## تشغيل الاختبارات
 
-- **Isolation Forest**: Uses standardized continuous telemetry (`latency_ms`, `error_rate`, `cpu_pct`, `memory_mb`, `payload_bytes`) and a derived binary HTTP-error indicator (never raw HTTP status codes as continuous numbers). `-decision_function` is min-max normalized per run to `0..1`; scores are relative within that run only. Model classification (`is_anomaly`) is authoritative.
-- **Thresholds & heuristics**:
-  - `threshold_score` is the minimum normalized score among flagged anomalies, or `null` when no anomalies are detected.
-  - Severity bands (`critical` ≥ `0.80`, `high` ≥ `0.60`, `medium` < `0.60`) are uncalibrated display thresholds for UI triage.
-  - `feature_importances` reports mean absolute standardized deviation (z-score heuristic) for client compatibility — not tree-based Isolation Forest importance or SHAP values.
-- **Binary PSO (demonstrative)**: Evaluates five read-only investigation actions with a two-action, `$50` notional budget constraint. `_position_fitness` takes the maximum single-action fitness in a particle position so the swarm searches for the best single read-only action matching the UI contract:
-  ```text
-  0.60 × expected benefit − 0.18 × normalized cost − 0.15 × risk − 0.07 × latency
-  ```
-  Expected benefit is an uncalibrated heuristic from observed log characteristics; cost, risk, and latency are fixed catalog metadata (not measured dollars or probabilities). Because the catalog has 5 actions, PSO is **demonstrative** and validated in tests against `exhaustive_best_action` as the authoritative single-action reference.
-  - `baseline_cost_usd` / `estimated_savings_pct`: measured against the **all-actions baseline** (sum of all candidate action costs without optimization).
-  - `converged_at_iteration`: `null` when the global best came from initialization and was never improved, or iteration `N` (1-based) when last improved.
-- **Intelligent Agent**: Deterministic, pure-function, read-only state machine. Recommendations are explicitly labeled as **investigation leads, not confirmed root causes**. `evidence_coverage_pct` (also mirrored in `confidence_score_pct` for backward compatibility) measures upstream evidence completeness — not a probability or certainty score.
+### Backend
 
-## Demo script & credentials
+من مجلد المشروع وبعد تفعيل البيئة الافتراضية:
 
-### Demo account
-
-Create this account once via the **Create an account** form (or sign in if already registered):
-
-| Field | Value |
-|---|---|
-| Email | `demo@tracemind.app` |
-| Password | `TraceMind2026!Demo` |
-
-> **Note**: Reserved domains like `.local` (e.g., `test@audit.local`) are rejected by `EmailStr`. Use a standard domain like `demo@tracemind.app`.
-
-### Ready-to-upload sample CSV
-
-A ready-to-upload sample file is committed at [`docs/demo-sample.csv`](docs/demo-sample.csv) (8 events, 2 clearly anomalous on `api-gateway` and `cache-service`):
-
-```csv
-event_id,timestamp,service,latency_ms,error_rate,cpu_pct,memory_mb,payload_bytes,status_code
-evt-001,2026-01-01T10:00:00Z,auth-service,45,0.01,22,180,512,200
-evt-002,2026-01-01T10:00:01Z,auth-service,52,0.02,25,195,480,200
-evt-003,2026-01-01T10:00:02Z,api-gateway,8900,0.95,97,980,2048,503
-evt-004,2026-01-01T10:00:03Z,auth-service,48,0.01,24,188,500,200
-evt-005,2026-01-01T10:00:04Z,auth-service,51,0.02,23,192,490,200
-evt-006,2026-01-01T10:00:05Z,cache-service,7500,0.88,91,850,1800,500
-evt-007,2026-01-01T10:00:06Z,auth-service,49,0.01,22,185,505,200
-evt-008,2026-01-01T10:00:07Z,auth-service,47,0.02,21,182,495,200
-```
-
-### 2-minute live demo walkthrough
-
-1. Start both servers (`./scripts/start-tracemind.sh` on Linux/macOS or `Start-TraceMind.bat` on Windows) and open `http://localhost:3000`.
-2. Sign in (or register) with `demo@tracemind.app` / `TraceMind2026!Demo`.
-3. Open **Analyze**, upload `docs/demo-sample.csv`, and click **Run TraceMind Analysis Pipeline**.
-4. In **Overview**, highlight the detected anomalies (`evt-003` / `evt-006`) and the read-only recommended next step.
-5. Open **Investigate → Events** to inspect feature z-score contributions, then **Investigate → Recommendation** to show the PSO candidate table, convergence chart, and deterministic read-only agent decision trace (noting that findings are investigation leads, not confirmed root causes).
-6. Open **History**, click Delete on a test run to show the confirmation dialog, and optionally click **API Contracts** in the status bar to show the live backend contract.
-
-## Test, lint, and build
-
-```bash
-# Backend tests and lint (Linux / macOS)
-PYTHONPATH=backend python -m pytest backend/tests -q
-python -m ruff check backend
-
-# Frontend typecheck + ESLint, unit tests, production build, and Playwright E2E
-npm run lint
-npm test
-npm run build
-npx playwright test
-```
-
-<details>
-<summary>Windows PowerShell test commands</summary>
-
-```powershell
+~~~powershell
 $env:PYTHONPATH = "backend"
 py -m pytest backend\tests -q
 py -m ruff check backend
+~~~
+
+على Linux وmacOS:
+
+~~~bash
+PYTHONPATH=backend python -m pytest backend/tests -q
+python -m ruff check backend
+~~~
+
+### Frontend
+
+~~~bash
 npm run lint
 npm test
 npm run build
-npx playwright test
-```
-</details>
+~~~
 
-The backend test suite covers ingestion validation, reproducible Isolation Forest results, binary PSO output against the exhaustive baseline, deterministic agent traces, `/health` and `/api/health`, CORS preflight with `Authorization`, paginated history, user isolation, and full API lifecycle using isolated SQLite databases. A Markdown companion to the bilingual Word report is available at [`TraceMind_Bilingual_Project_Report.md`](TraceMind_Bilingual_Project_Report.md).
+### اختبارات End-to-End
+
+~~~bash
+npx playwright test
+~~~
+
+قد تحتاج إلى تثبيت متصفحات Playwright لأول مرة وفق تعليمات Playwright الخاصة ببيئتك.
+
+## توثيق إضافي
+
+- [مرجع API](docs/architecture/api-reference.md)
+- [نظرة عامة على المعمارية](docs/architecture/architecture-overview.md)
+- [تدفق البيانات](docs/architecture/data-flow.md)
+- [مبررات تصميم Binary PSO](docs/validation/pso-design-rationale.md)
+- [تقرير المشروع](TraceMind_Bilingual_Project_Report.md)
+
+## حدود المشروع وملاحظات مهمة
+
+- المشروع مخصص للتجربة والتقييم التعليمي، وليس نظامًا تشغيليًا لاتخاذ قرارات تلقائية في بيئات الإنتاج.
+- نتائج Isolation Forest ودرجات الخطورة مؤشرات تحليلية يجب تفسيرها في سياق البيانات.
+- توصيات الوكيل مسارات تحقيق مقترحة وليست تأكيدًا لسبب المشكلة.
+- Binary PSO يختار من كتالوج محدود لإجراءات التحقيق للقراءة فقط؛ ولا ينفذ أوامر على الخدمات أو الخوادم.
+- لا يتضمن المشروع تنفيذًا تلقائيًا لمعالجة الحوادث أو تكاملًا مفترضًا مع أنظمة مراقبة خارجية.
+
+## المساهمة
+
+المساهمات مرحب بها. قبل اقتراح تغيير:
+1. راجع بنية المشروع والوثائق ذات الصلة.
+2. افتح Issue لوصف المشكلة أو الميزة المقترحة.
+3. اجعل التغييرات محددة وقابلة للاختبار.
+4. أضف أو حدّث الاختبارات والوثائق عند الحاجة.
+
+## الترخيص
+
+راجع ملف الترخيص الموجود في المستودع لمعرفة شروط الاستخدام وإعادة التوزيع.
+
+---
+
+<p align="center">
+  <strong>TraceMind — من سجلات الأحداث إلى أدلة أوضح وقرارات تحقيق أفضل.</strong>
+</p>

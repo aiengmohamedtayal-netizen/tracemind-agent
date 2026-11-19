@@ -28,6 +28,7 @@ The backend is authoritative. The client preflight is intentionally earlier feed
 ```text
 validated events
   → Isolation Forest evaluated events + summary
+  → Random Forest severity classification (ml_severity per event + summary)
   → data-derived read-only candidate actions
   → binary PSO selected action + convergence history
   → deterministic investigation agent (evidence → beliefs → goals → PSO-aligned intention → decision trace)

@@ -1,0 +1,98 @@
+{
+  "features": [
+    "anomaly_score",
+    "isolation_depth",
+    "is_anomaly",
+    "latency_ms",
+    "error_rate",
+    "cpu_pct",
+    "memory_mb",
+    "payload_bytes",
+    "status_error_indicator",
+    "status_server_error",
+    "severity_rank",
+    "error_term",
+    "warning_term",
+    "exception_term",
+    "component_frequency"
+  ],
+  "medians": {
+    "anomaly_score": 0.20254450000000002,
+    "isolation_depth": 7.85,
+    "is_anomaly": 0.0,
+    "latency_ms": 53.474999999999994,
+    "error_rate": 0.0359,
+    "cpu_pct": 35.55,
+    "memory_mb": 253.38,
+    "payload_bytes": 592.885,
+    "status_error_indicator": 0.0,
+    "status_server_error": 0.0,
+    "severity_rank": 2.0,
+    "error_term": 0.0,
+    "warning_term": 0.0,
+    "exception_term": 0.0,
+    "component_frequency": 0.2
+  },
+  "classes": [
+    "critical",
+    "medium",
+    "normal"
+  ],
+  "label_rules_version": "v1",
+  "label_rules": "R1 critical: is_anomaly and anomaly_score >= 0.85; R2 critical: status_code >= 500 and anomaly_score >= 0.50; R3 critical: error_rate >= 0.80 and is_anomaly; R4 critical: exception_term == 1 and is_anomaly and anomaly_score >= 0.60; R5 medium: is_anomaly; R6 medium: status_code >= 400 and anomaly_score >= 0.40; R7 medium: error_rate >= 0.30 and anomaly_score >= 0.40; R8 normal: otherwise. Labels are rule-derived heuristics, not human-verified.",
+  "model_version": "severity-classifier v1",
+  "sklearn_version": "1.9.0",
+  "trained_at": "2026-11-19T13:56:21.048510Z",
+  "metrics": {
+    "accuracy": 1.0,
+    "per_class": {
+      "critical": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 507
+      },
+      "medium": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 843
+      },
+      "normal": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 3150
+      }
+    },
+    "confusion_matrix": {
+      "labels": [
+        "critical",
+        "medium",
+        "normal"
+      ],
+      "matrix": [
+        [
+          507,
+          0,
+          0
+        ],
+        [
+          0,
+          843,
+          0
+        ],
+        [
+          0,
+          0,
+          3150
+        ]
+      ]
+    },
+    "mean_confidence": 0.9957,
+    "test_size": 4500,
+    "train_size": 18000
+  },
+  "training_rows": 22500,
+  "data_note": "pooled multi-size synthetic training: 5 independent batches (500/1000/3000/6000/12000 rows, generator seeds 42-46), each scored by its own Isolation Forest fit (contamination 0.30) to mimic separate user uploads; labels are rule-derived, not human-verified"
+}

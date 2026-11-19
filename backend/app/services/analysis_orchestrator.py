@@ -14,6 +14,7 @@ from app.services.anomaly_detection import detect_anomalies
 from app.services.ingestion import parse_event_content
 from app.services.intelligent_agent import build_recommendation
 from app.services.pso_optimizer import optimize_actions
+from app.services.severity_classifier import classify_severity
 
 
 class AnalysisOrchestrator:
@@ -27,6 +28,7 @@ class AnalysisOrchestrator:
         started = time.perf_counter()
         events = parse_event_content(content, file_format)
         detection = detect_anomalies(events, contamination=config.contamination, n_estimators=config.n_estimators, random_seed=self._random_seed)
+        severity = classify_severity(detection.events)
         candidates = build_candidate_actions(detection.events, detection.summary)
         pso = optimize_actions(candidates, swarm_size=config.swarm_size, max_iterations=config.max_iterations, inertia_weight=config.inertia_weight, cognitive_coeff=config.cognitive_coeff, social_coeff=config.social_coeff, random_seed=self._random_seed).payload
         agent = build_recommendation(
@@ -44,6 +46,7 @@ class AnalysisOrchestrator:
             "status": "completed",
             "duration_ms": 0,
             "isolation_forest": detection.summary,
+            "severity_classification": severity.summary,
             "pso_optimization": pso,
             "agent_recommendation": agent,
             "events": detection.events,

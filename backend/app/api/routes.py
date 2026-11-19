@@ -133,7 +133,7 @@ def health() -> dict[str, Any]:
         check_database_connection()
     except Exception as exc:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="SQLite database is unavailable.") from exc
-    return {"status": "ok", "database": "sqlite_connected", "models": ["IsolationForest", "PSO", "IntelligentAgent"]}
+    return {"status": "ok", "database": "sqlite_connected", "models": ["IsolationForest", "PSO", "IntelligentAgent", "SeverityClassifier"]}
 
 
 @router.post("/analyze")

@@ -403,6 +403,7 @@ export const AnomaliesTableView: React.FC<AnomaliesTableViewProps> = ({
                       <th className="py-3 px-3.5 text-right">CPU</th>
                       <th className="py-3 px-3.5 text-right">IForest Score</th>
                       <th className="py-3 px-3.5">Classification</th>
+                      <th className="py-3 px-3.5">ML Severity</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200/80 text-xs">
@@ -485,6 +486,29 @@ export const AnomaliesTableView: React.FC<AnomaliesTableViewProps> = ({
                               <span className="text-slate-500 font-medium">Nominal</span>
                             )}
                           </td>
+                          <td className="py-2.5 px-3.5 whitespace-nowrap">
+                            {ev.ml_severity ? (
+                              <span
+                                title={ev.ml_severity_explanation}
+                                className={`inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-[11px] font-semibold border ${
+                                  ev.ml_severity === 'critical'
+                                    ? 'bg-red-50 text-red-700 border-red-200'
+                                    : ev.ml_severity === 'medium'
+                                    ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                    : 'bg-slate-100 text-slate-600 border-slate-200'
+                                }`}
+                              >
+                                {ev.ml_severity.toUpperCase()}
+                                {ev.ml_severity_confidence != null && (
+                                  <span className="font-mono text-[10px] opacity-75">
+                                    {(ev.ml_severity_confidence * 100).toFixed(0)}%
+                                  </span>
+                                )}
+                              </span>
+                            ) : (
+                              <span className="text-slate-400 font-mono text-[11px]">—</span>
+                            )}
+                          </td>
                         </tr>
                       );
                     })}
@@ -535,6 +559,39 @@ export const AnomaliesTableView: React.FC<AnomaliesTableViewProps> = ({
                 </div>
 
                 {activeEvent.message && <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs"><div className="mb-1 font-semibold text-slate-600">Raw log message</div><pre className="max-h-48 overflow-auto whitespace-pre-wrap break-words font-mono text-slate-800">{activeEvent.message}</pre></div>}
+
+                {/* Random Forest Severity Classifier Metric */}
+                {activeEvent.ml_severity && (
+                  <div className="rounded-xl border border-cyan-500/30 bg-cyan-950/20 p-3.5 text-xs space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-slate-200">ML Severity Classifier</span>
+                      <span className="font-mono text-[10px] text-cyan-400 font-medium">RandomForest</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span
+                        className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-bold border ${
+                          activeEvent.ml_severity === 'critical'
+                            ? 'bg-red-500/20 text-red-300 border-red-500/40'
+                            : activeEvent.ml_severity === 'medium'
+                            ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                            : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                        }`}
+                      >
+                        {activeEvent.ml_severity.toUpperCase()}
+                      </span>
+                      {activeEvent.ml_severity_confidence != null && (
+                        <span className="font-mono text-xs font-semibold text-slate-300">
+                          {(activeEvent.ml_severity_confidence * 100).toFixed(1)}% confidence
+                        </span>
+                      )}
+                    </div>
+                    {activeEvent.ml_severity_explanation && (
+                      <p className="text-[11px] leading-relaxed text-slate-300 border-t border-slate-700/60 pt-2">
+                        {activeEvent.ml_severity_explanation}
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 {/* Isolation Forest Metrics */}
                 <div className="grid grid-cols-2 gap-3 bg-slate-50 border border-slate-200/80 rounded-xl p-3.5 text-xs">

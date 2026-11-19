@@ -46,6 +46,9 @@ export interface EvaluatedEventRecord extends RawEventLogRecord {
   severity: SeverityLevel;
   primary_driver: string;
   feature_contributions: FeatureContribution[];
+  ml_severity?: 'critical' | 'medium' | 'normal';
+  ml_severity_confidence?: number;
+  ml_severity_explanation?: string;
 }
 
 export interface IsolationForestSummary {
@@ -207,6 +210,23 @@ export interface AgentDecisionTrace {
   limitations: string[];
 }
 
+export interface SeverityClassificationSummary {
+  model: string;
+  model_version?: string;
+  algorithm?: string;
+  classes?: string[];
+  label_rules_version?: string;
+  labels_note?: string;
+  total_events: number;
+  counts: {
+    critical?: number;
+    medium?: number;
+    normal?: number;
+    [key: string]: number | undefined;
+  };
+  mean_confidence?: number;
+}
+
 export interface AnalysisRun {
   run_id: string;
   created_at: string;
@@ -216,6 +236,7 @@ export interface AnalysisRun {
   status: 'completed' | 'failed' | 'processing';
   duration_ms: number;
   isolation_forest: IsolationForestSummary;
+  severity_classification?: SeverityClassificationSummary;
   pso_optimization: PSOOptimizationResult;
   agent_recommendation: AgentRecommendation;
   events: EvaluatedEventRecord[];

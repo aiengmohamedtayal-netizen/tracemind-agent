@@ -1,6 +1,6 @@
 import React, { lazy, Suspense } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
-import { Activity, ArrowUpRight, Database, Fingerprint, ScanSearch, UploadCloud, Waves } from 'lucide-react';
+import { Activity, ArrowUpRight, Cpu, Database, Fingerprint, ScanSearch, UploadCloud, Waves } from 'lucide-react';
 import { AnalysisRun, EvaluatedEventRecord } from '../types/tracemind';
 import { NavTabId } from './Header';
 
@@ -83,6 +83,52 @@ export const OverviewView: React.FC<OverviewViewProps> = ({run,isLoading,backend
               <Metric label="Affected services" value={affected.length} note={affected.slice(0, 2).join(', ') || 'No service flagged'} icon={<Database />} />
               <Metric label="Processing time" value={`${run.duration_ms}ms`} note="Time taken to analyze and save" icon={<Activity />} />
             </div>
+
+            {run.severity_classification && (
+              <div className="mt-7 rounded-2xl border border-cyan-500/20 bg-cyan-950/20 p-5 backdrop-blur-sm">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-cyan-500/10 border border-cyan-500/30 text-cyan-400">
+                      <Cpu className="h-4 w-4" />
+                    </span>
+                    <div>
+                      <h2 className="text-sm font-semibold text-white">Severity Classification (Random Forest)</h2>
+                      <p className="text-[11px] text-slate-400">
+                        {run.severity_classification.model} · {run.severity_classification.algorithm} · {((run.severity_classification.mean_confidence ?? 0) * 100).toFixed(1)}% mean confidence
+                      </p>
+                    </div>
+                  </div>
+                  <span className="rounded-full bg-cyan-500/10 px-2.5 py-0.5 font-mono text-[11px] font-medium text-cyan-300 border border-cyan-500/30">
+                    ML Supervised
+                  </span>
+                </div>
+                <div className="mt-4 grid grid-cols-3 gap-3">
+                  <div className="rounded-xl border border-rose-500/20 bg-rose-950/20 p-3 text-center">
+                    <span className="text-[11px] font-medium text-rose-300 uppercase tracking-wider">Critical</span>
+                    <p className="mt-1 font-mono text-xl font-bold text-rose-200">
+                      {run.severity_classification.counts.critical ?? 0}
+                    </p>
+                  </div>
+                  <div className="rounded-xl border border-amber-500/20 bg-amber-950/20 p-3 text-center">
+                    <span className="text-[11px] font-medium text-amber-300 uppercase tracking-wider">Medium</span>
+                    <p className="mt-1 font-mono text-xl font-bold text-amber-200">
+                      {run.severity_classification.counts.medium ?? 0}
+                    </p>
+                  </div>
+                  <div className="rounded-xl border border-emerald-500/20 bg-emerald-950/20 p-3 text-center">
+                    <span className="text-[11px] font-medium text-emerald-300 uppercase tracking-wider">Normal</span>
+                    <p className="mt-1 font-mono text-xl font-bold text-emerald-200">
+                      {run.severity_classification.counts.normal ?? 0}
+                    </p>
+                  </div>
+                </div>
+                {run.severity_classification.labels_note && (
+                  <p className="mt-3 text-[10px] text-slate-500">
+                    ℹ️ {run.severity_classification.labels_note}
+                  </p>
+                )}
+              </div>
+            )}
             <div className="grid gap-8 py-8 lg:grid-cols-[1fr_.8fr]">
               <section aria-labelledby="next-step-title">
                 <p className="text-xs text-slate-400">Recommended next step (read-only check picked by PSO)</p>
